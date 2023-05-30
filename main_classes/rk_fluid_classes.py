@@ -421,11 +421,6 @@ class FluidState:
             return self
 
 
-def get_iso_entropic_expansion(state_in, p_out):
-
-    pass
-
-
 def calculate_vertical(fluid_eos, state_in, res_depth, downward=True, check_sat=False):
     def rk_overall_der(z, y):
 
