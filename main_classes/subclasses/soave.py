@@ -1,6 +1,7 @@
 from main_classes.cubic_eos import CubicEOS, get_real_res
 import numpy as np
 
+
 class SRKEOS(CubicEOS):
 
     def a(self, t):
