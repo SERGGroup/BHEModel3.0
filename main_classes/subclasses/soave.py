@@ -27,7 +27,10 @@ class SRKEOS(CubicEOS):
         self.r_2 = -1
         self.__f_acntr = 0.48 + 1.57 * self.acntr - 0.176 * self.acntr ** 2
 
-        a_0 = (np.power(2, 1/3) - 1) / 9 * (self.r_spc * self.t_crit) ** 2 / self.p_crit
-        b_0 = (np.power(2, 1/3) - 1) / 3 * self.r_spc * self.t_crit / self.p_crit
+        # v_crit_0 = self.v_crit
+        self.a_0 = (np.power(2, 1/3) - 1) / 9 * (self.r_spc * self.t_crit) ** 2 / self.p_crit
+        self.b = (np.power(2, 1/3) - 1) / 3 * self.r_spc * self.t_crit / self.p_crit
 
-        self.iterate_coefficients([a_0, b_0])
+        self.a_0 = 0.42747 * (self.r_spc * self.t_crit) ** 2 / self.p_crit
+        self.b = 0.08664 * self.r_spc * self.t_crit / self.p_crit
+

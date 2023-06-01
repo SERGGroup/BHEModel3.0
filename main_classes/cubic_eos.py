@@ -336,7 +336,10 @@ class CubicEOS(ABC):
 
         self.r12 = self.r_1 * self.r_2
         self.r1r2 = self.r_1 + self.r_2
-        a_3 = self.r_1 ** 2 + self.r_2 ** 2 + 3 * self.r12
+
+        beta_1 = self.p_crit / (self.r_spc * self.t_crit)
+        alpha_1 = self.a(self.t_crit) / (self.r_spc * self.t_crit) / self.a_0
+        a_3 = self.r_1 ** 2 + self.r_2 ** 2 + 3 * self.r_1 * self.r_2
 
         def f_iter(x):
 
@@ -348,19 +351,19 @@ class CubicEOS(ABC):
 
                 self.a_0, self.b = x
 
-            alpha = self.a(self.t_crit) / (self.b * self.r_spc * self.t_crit)
-            beta = self.b * self.p_crit / (self.r_spc * self.t_crit)
+            alpha = alpha_1 * self.a_0 / self.b
+            beta = beta_1 * self.b
             eta = self.v_crit / self.b
 
             a1 = (eta - 1)
             a2 = (eta - self.r_1) * (eta - self.r_2)
 
-            dpdv = - 1 / a1 ** 2 + (2 * eta + self.r1r2) * alpha / a2 ** 2
+            p = 1 / a1 - alpha / a2 - beta
+            dpdv = (2 * eta + self.r1r2) * alpha / a2 ** 2 - 1 / a1 ** 2
             ddpddv = 1 / a1 ** 3 - (3 * eta ** 2 - eta * self.r1r2 + a_3) * alpha / a2 ** 3
 
             if len(x) > 2:
 
-                p = 1 / a1 - alpha / a2 - beta
                 return [p, dpdv, ddpddv]
 
             else:
