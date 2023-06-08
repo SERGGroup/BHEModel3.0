@@ -67,8 +67,6 @@ def rk_funct_simple(z, y):
     points_simple["dT"].append(dt)
     points_simple["drho"].append(drho)
 
-    print("1 - {}".format(tp_curr.get_variable("P")))
-
     return [drho]
 
 def rk_overall_der(z, y):
@@ -104,8 +102,6 @@ def rk_overall_der(z, y):
 
     points_overall["dT"].append(dt)
     points_overall["drho"].append(drho)
-
-    print("2 - {}".format(tp_curr.get_variable("P")))
 
     return [drho]
 
