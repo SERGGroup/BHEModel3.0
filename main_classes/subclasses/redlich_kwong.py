@@ -1,5 +1,7 @@
+from main_classes.support.p_sat_calculation import COEFFICIENTS
 from main_classes.cubic_eos import CubicEOS, get_real_res
 import numpy as np
+
 
 class RKEOS(CubicEOS):
 
@@ -36,3 +38,7 @@ class RKEOS(CubicEOS):
         t_l, t_v = get_real_res(res)
 
         return t_l
+
+    def sat_coefficients(self):
+
+        return COEFFICIENTS["RK"]

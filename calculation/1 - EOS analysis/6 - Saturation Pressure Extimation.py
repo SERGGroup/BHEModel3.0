@@ -1,6 +1,6 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
 from main_classes.constant import CALCULATION_DIR
-from main_classes.cubic_eos import CubicEOS
+from main_classes.subclasses import RKEOS, VdWEOS
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from matplotlib import ticker
@@ -9,7 +9,7 @@ import os
 
 
 # %%-------------------------------------   T_SAT CALCULATIONS                  -------------------------------------> #
-fluid = CubicEOS(
+fluid = RKEOS(
 
     p_crit=1e6,
     t_crit=1e5,

@@ -1,7 +1,9 @@
+from main_classes.support.p_sat_calculation import p_sat_rel, t_sat_rel
 from scipy.optimize import fsolve, root_scalar
 from abc import ABC, abstractmethod
 import scipy.constants
 import numpy as np
+
 
 def get_real_res(res):
 
@@ -106,14 +108,32 @@ class CubicEOS(ABC):
 
         if t < self.t_crit:
 
-            p_sat, z_l, z_v = self.p_sat(t)
+            p_sat, z_l, z_v = self.p_sat(t, get_approximate=True)
 
-            v_liq = z_l * self.r_spc * t / p_sat
-            v_vap = z_v * self.r_spc * t / p_sat
+            if p_sat is None:
 
-            if v_liq < v < v_vap:
+                p_sat, z_l, z_v = self.p_sat(t,get_approximate=False)
+                v_liq = z_l * self.r_spc * t / p_sat
+                v_vap = z_v * self.r_spc * t / p_sat
 
-                return p_sat
+                if v_liq < v < v_vap:
+
+                    return p_sat
+
+            else:
+
+                v_liq = z_l * self.r_spc * t / p_sat
+                v_vap = z_v * self.r_spc * t / p_sat
+
+                if v_liq * 0.98 < v < v_vap * 1.02:
+
+                    p_sat, z_l, z_v = self.p_sat(t, get_approximate=False)
+                    v_liq = z_l * self.r_spc * t / p_sat
+                    v_vap = z_v * self.r_spc * t / p_sat
+
+                    if v_liq < v < v_vap:
+
+                        return p_sat
 
         z_l, z_v = self.z(t=t, v=v)
         return z_l * self.r_spc * t / v
@@ -122,12 +142,30 @@ class CubicEOS(ABC):
 
         if p < self.p_crit:
 
-            t_sat, z_l, z_v = self.t_sat(p)
-            v_liq = z_l * self.r_spc * t_sat / p
-            v_vap = z_v * self.r_spc * t_sat / p
+            t_sat, z_l, z_v = self.t_sat(p, get_approximate=True)
 
-            if v_liq < v < v_vap:
-                return t_sat
+            if t_sat is None:
+
+                t_sat, z_l, z_v = self.t_sat(p, get_approximate=False)
+                v_liq = z_l * self.r_spc * t_sat / p
+                v_vap = z_v * self.r_spc * t_sat / p
+
+                if v_liq < v < v_vap:
+                    return t_sat
+
+            else:
+
+                v_liq = z_l * self.r_spc * t_sat / p
+                v_vap = z_v * self.r_spc * t_sat / p
+
+                if v_liq * 0.98 < v < v_vap * 1.02:
+
+                    t_sat, z_l, z_v = self.t_sat(p, get_approximate=False)
+                    v_liq = z_l * self.r_spc * t_sat / p
+                    v_vap = z_v * self.r_spc * t_sat / p
+
+                    if v_liq < v < v_vap:
+                        return t_sat
 
         z_l, z_v = self.z(v=v, p=p)
         return p * v / (self.r_spc * z_l)
@@ -182,67 +220,95 @@ class CubicEOS(ABC):
 
         return z_l, z_v
 
-    def p_sat(self, t):
+    def p_sat(self, t, get_approximate=False):
 
-        if t < self.t_crit:
+        return self.__get_sat(t, get_approximate=get_approximate, get_p=True)
 
-            p_rels = [0, 1]
-            p_curr, z_l, z_v = np.zeros(3)
+    def t_sat(self, p, get_approximate=False):
+
+        return self.__get_sat(p, get_approximate=get_approximate, get_p=False)
+
+    def __get_sat(self, y, get_approximate=False, get_p=True):
+
+        if get_approximate:
+
+            return self.__approx_sat(y, get_p=get_p)
+
+        else:
+
+            return self.__iterate_sat(y, get_p=get_p)
+
+    def __iterate_sat(self, y, get_p):
+
+        if get_p:
+
+            x_crit = self.p_crit
+            y_crit = self.t_crit
+
+        else:
+
+            x_crit = self.t_crit
+            y_crit = self.p_crit
+
+        if y < y_crit:
+
+            x_rels = [0, 1]
+            x_curr, z_l, z_v = np.zeros(3)
 
             n = 0
             while n < 25:
 
-                p_rel = np.mean(p_rels)
-                p_curr = p_rel * self.p_crit
+                x_rel = np.mean(x_rels)
+                x_curr = x_rel * x_crit
 
-                err, z_l, z_v = self.__error_sat(t, p_curr)
+                if get_p:
+
+                    err, z_l, z_v = self.__error_sat(t=y, p=x_curr)
+
+                else:
+
+                    err, z_l, z_v = self.__error_sat(t=x_curr, p=y)
+                    err = -err
 
                 if err < 0:
 
-                    p_rels[1] = p_rel
+                    x_rels[1] = x_rel
 
                 else:
 
-                    p_rels[0] = p_rel
+                    x_rels[0] = x_rel
 
                 n += 1
 
-            return p_curr, z_l, z_v
+            return x_curr, z_l, z_v
+
+        elif y == y_crit:
+
+            return x_crit, self.v_crit, self.v_crit
 
         return np.nan, np.nan, np.nan
 
-    def t_sat(self, p):
+    def __approx_sat(self, y, get_p):
 
-        if p < self.p_crit:
+        cs = self.sat_coefficients
 
-            t_rels = [0, 1]
-            t_curr, z_l, z_v = np.zeros(3)
+        if self.sat_coefficients is not None:
 
-            n = 0
-            while n < 25:
+            if get_p:
 
-                t_rel = np.mean(t_rels)
-                t_curr = t_rel * self.t_crit
+                x = p_sat_rel(y / self.t_crit, cs) * self.p_crit
+                z_l, z_v = self.z(t=y, p=x)
 
-                err, z_l, z_v = self.__error_sat(t_curr, p)
+            else:
 
-                if err > 0:
+                x = t_sat_rel(y / self.p_crit, cs) * self.t_crit
+                z_l, z_v = self.z(t=x, p=y)
 
-                    t_rels[1] = t_rel
+            return x, z_l, z_v
 
-                else:
+        else:
 
-                    t_rels[0] = t_rel
-
-                n += 1
-
-            return t_curr, z_l, z_v
-
-        elif p == self.p_crit:
-
-            return self.t_crit, self.v_crit, self.v_crit
-
-        return np.nan, np.nan, np.nan
+            return None, None, None
 
     def __error_sat(self, t, p):
 
@@ -317,6 +383,11 @@ class CubicEOS(ABC):
         self.z_crit = 1/3
         self.r_1 = 0
         self.r_2 = -1
+
+    @property
+    def sat_coefficients(self):
+
+        return None
 
     def iterate_t(self, p, v):
 
