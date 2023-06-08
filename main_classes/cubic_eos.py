@@ -502,7 +502,7 @@ class FluidState:
             else:
 
                 s_ideal = self.fluid_solver.cp_ideal * np.log(self.__t) - self.fluid_solver.r_spc * np.log(self.p)
-                s_dep = self.int_rv
+                s_dep = - self.int_rv
                 self.__s = s_ideal + s_dep
 
         return self.__s
@@ -671,7 +671,13 @@ class FluidState:
 
             try:
 
-                self.__u = np.log(eta_r1 / eta_r2) / (self.fluid_solver.b * (eta_r2 - eta_r1))
+                if eta_r1 == eta_r2:
+
+                    self.__u = 1 / (- self.fluid_solver.b * eta_r1)
+
+                else:
+
+                    self.__u = np.log(eta_r1 / eta_r2) / (self.fluid_solver.b * (eta_r2 - eta_r1))
 
             except:
 

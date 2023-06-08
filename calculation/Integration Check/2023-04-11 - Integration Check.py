@@ -1,17 +1,19 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
+from main_classes.constant import CALCULATION_DIR
 from REFPROPConnector import ThermodynamicPoint
 from scipy.integrate import RK45
 import matplotlib.pyplot as plt
 import scipy.constants
 import pandas as pd
 import numpy as np
+import os
+
 
 # %%-------------------------------------   FUNCTION DEFINITION                 -------------------------------------> #
-
 R = scipy.constants.R
 g = scipy.constants.g
 
-fluid = "CarbonDioxide"
+fluid = "Carbon Dioxide"
 tp_in = ThermodynamicPoint([fluid], [1], unit_system="MASS BASE SI")
 tp_in_mol = ThermodynamicPoint([fluid], [1], unit_system="MOLAR BASE SI")
 
@@ -161,10 +163,10 @@ def rk_overall_der(z, y):
     dhdp = tp_curr.get_derivative("h", "P", "T")
     dhdt = tp_curr.get_derivative("h", "T", "P")
 
-    r_dag = t_curr * dpdt ** 2 / dpdv
+    r_dag = - t_curr * dpdt ** 2 / dpdv
 
     dp = - rho_curr * g
-    dv = (1 + r_dag/cp) / dpdv * dp
+    dv = (1 - r_dag / cp) / dpdv * dp
     dt = dtdp * dp + dtdv * dv
 
     drho = dp/dpdrho + dt/dtdrho
@@ -226,12 +228,14 @@ err_abs_overall = (output_overall[0] - output_simple[0])
 err_rel_overall = err_abs_overall / output_simple[0]
 print("the overall error was {:0.2f}%".format(err_rel_overall*100))
 
+
 # %%-------------------------------------   INIT PLOT                           -------------------------------------> #
 h_fig = 8
 n_sub_plots = 2
 fig, super_axs = plt.subplots(1, n_sub_plots)
 fig.set_size_inches(n_sub_plots * h_fig * 1.2, h_fig)
 i = 0
+
 
 # %%-------------------------------------   PLOT CURVES                         -------------------------------------> #
 ax = super_axs[i]
@@ -311,10 +315,12 @@ for i in range(len(axs)):
 lines.append(enthalpy_scatters[0])
 lines.append(overall_scatters[0])
 labs = [l.get_label() for l in lines]
-
+ax.legend(lines, labs, fontsize=15)
 
 # %%-------------------------------------   SHOW PLOT                           -------------------------------------> #
-ax.legend(lines, labs, fontsize=15)
 plt.tight_layout(pad=5)
 plt.show()
 
+
+# %%-------------------------------------   SAVE PLOT                           -------------------------------------> #
+fig.savefig(os.path.join(CALCULATION_DIR, "Integration Check", "output", "adiabatic check.png"))

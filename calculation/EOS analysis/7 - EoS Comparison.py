@@ -3,7 +3,6 @@ from main_classes.constant import CALCULATION_DIR
 from REFPROPConnector import ThermodynamicPoint
 from main_classes import VdWEOS, RKEOS, SRKEOS
 import matplotlib.pyplot as plt
-from matplotlib import ticker
 from itertools import cycle
 from tqdm import tqdm
 import numpy as np
