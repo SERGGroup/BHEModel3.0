@@ -93,4 +93,4 @@ plt.show()
 
 
 # %%-------------------------------------   SAVE PLOT                           -------------------------------------> #
-fig.savefig(os.path.join(CALCULATION_DIR, "EOS analysis", "output", "7 - EoS Comparison.png"))
+fig.savefig(os.path.join(CALCULATION_DIR, "1 - EOS analysis", "output", "7 - EoS Comparison.png"))

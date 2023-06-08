@@ -1,7 +1,5 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
 from REFPROPConnector import ThermodynamicPoint
-from scipy.stats import linregress
-from scipy.integrate import RK45
 import matplotlib.pyplot as plt
 from itertools import cycle
 import scipy.constants
@@ -155,7 +153,7 @@ class RKFluid:
             return - np.inf, - np.inf, v_g
 
 
-# %%-------------------------------------   TEST CLASS                          -------------------------------------> #
+# %%-------------------------------------   CALCULATE POINTS                    -------------------------------------> #
 rp_co2 = ThermodynamicPoint(["Carbon Dioxide"], [1], unit_system="MASS BASE SI")
 t_crit = rp_co2.RPHandler.TC
 p_crit = rp_co2.RPHandler.PC
@@ -199,7 +197,7 @@ plt.legend()
 plt.show()
 
 
-# %%-------------------------------------   TEST CLASS                          -------------------------------------> #
+# %%-------------------------------------   PLOT DENSITY RESULTS                -------------------------------------> #
 n_points = 10000
 
 rho_rels = np.logspace(-6, 10, n_points)
@@ -220,18 +218,15 @@ for i in range(len(v_rels)):
 
 df = pd.DataFrame(values[0:3, :].T)
 df = df.dropna(axis=0)
-
 x_values = np.log10(df[0])
-
 
 plt.scatter(df[0], df[2])
 plt.grid(visible=True, which="major", axis="both")
-
 plt.xscale("log")
-
 plt.show()
 
-# %%-------------------------------------   TEST CLASS                          -------------------------------------> #
+
+# %%-------------------------------------   PLOT PRESSURE RESULTS               -------------------------------------> #
 n_points = 100
 
 p_rels = np.logspace(0, -2, n_points)
@@ -249,11 +244,9 @@ for i in range(len(p_rels)):
 
 df = pd.DataFrame(values[0:3, :].T)
 df = df.dropna(axis=0)
-
 x_values = np.log10(df[0])
 
 plt.scatter(df[0], df[2])
 plt.grid(visible=True, which="major", axis="both")
-
 plt.xscale("log")
 plt.show()

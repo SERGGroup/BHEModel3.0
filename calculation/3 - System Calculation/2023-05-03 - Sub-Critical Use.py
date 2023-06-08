@@ -1,10 +1,6 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
 from main_classes.rk_fluid_classes import RKFluid, evaluate_system
 import matplotlib.pyplot as plt
-from itertools import cycle
-import scipy.constants
-from tqdm import tqdm
-import pandas as pd
 import numpy as np
 
 # %%-------------------------------------   CALCULATIONS                        -------------------------------------> #

@@ -88,4 +88,4 @@ plt.tight_layout()
 plt.show()
 
 # %%-------------------------------------   SAVE PLOT                           -------------------------------------> #
-fig.savefig(os.path.join(CALCULATION_DIR, "EOS analysis", "output", "6 - Saturation Polinomial.png"))
+fig.savefig(os.path.join(CALCULATION_DIR, "1 - EOS analysis", "output", "6 - Saturation Polinomial.png"))

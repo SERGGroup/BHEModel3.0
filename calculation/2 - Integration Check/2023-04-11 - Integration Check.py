@@ -323,4 +323,4 @@ plt.show()
 
 
 # %%-------------------------------------   SAVE PLOT                           -------------------------------------> #
-fig.savefig(os.path.join(CALCULATION_DIR, "Integration Check", "output", "adiabatic check.png"))
+fig.savefig(os.path.join(CALCULATION_DIR, "2 - Integration Check", "output", "adiabatic check.png"))
