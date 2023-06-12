@@ -34,6 +34,7 @@ def new_dict():
         "p": list(),
         "T": list(),
         "h": list(),
+        "s": list(),
         "rho": list(),
 
         "dp": list(),
@@ -78,6 +79,7 @@ def rk_funct_simple(z, y):
 
     points_simple["p"].append(p_curr)
     points_simple["h"].append(h_curr)
+    points_simple["s"].append(tp_curr.get_variable("s"))
     points_simple["T"].append(t_curr)
     points_simple["rho"].append(rho_curr)
 
@@ -125,6 +127,7 @@ def rk_enthalpy_der(z, y):
 
     points_enthalpy["p"].append(p_curr)
     points_enthalpy["h"].append(h_curr)
+    points_enthalpy["s"].append(tp_curr.get_variable("s"))
     points_enthalpy["T"].append(t_curr)
     points_enthalpy["rho"].append(rho_curr)
 
@@ -175,6 +178,7 @@ def rk_overall_der(z, y):
 
     points_overall["p"].append(p_curr)
     points_overall["h"].append(h_curr)
+    points_overall["s"].append(tp_curr.get_variable("s"))
     points_overall["T"].append(t_curr)
     points_overall["rho"].append(rho_curr)
 
