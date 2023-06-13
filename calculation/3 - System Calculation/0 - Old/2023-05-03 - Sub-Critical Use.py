@@ -1,10 +1,10 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
-from main_classes.rk_fluid_classes import RKFluid, evaluate_system
+from main_classes.subclasses.redlich_kwong import RKEOS
 import matplotlib.pyplot as plt
 import numpy as np
 
 # %%-------------------------------------   CALCULATIONS                        -------------------------------------> #
-fluid = RKFluid(
+fluid = RKEOS(
 
     p_crit=1e7,
     t_crit=350,
