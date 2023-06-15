@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy as np
 
+
 # %%-------------------------------------   CALCULATIONS                        -------------------------------------> #
 fluid = RKEOS(
 
@@ -71,7 +72,7 @@ plt.show()
 
 
 # %%-------------------------------------   PLOT PROFILES                       -------------------------------------> #
-plt.plot(sat_points[:, 1], sat_points[:, 0], color="black")
+#plt.plot(sat_points[:, 1], sat_points[:, 0], color="black")
 
 counter = 0
 plt_every = 20
@@ -84,7 +85,7 @@ for sys_states in states_list:
     for state in sys_states[0:]:
 
         p_list.append(state.p)
-        v_list.append(state.v)
+        v_list.append(state.h)
 
     if np.mod(counter, plt_every) == 0:
         plt.plot(v_list, p_list)

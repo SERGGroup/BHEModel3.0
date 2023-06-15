@@ -39,16 +39,15 @@ def calculate_vertical(fluid_eos: CubicEOS, state_in: FluidState, res_depth: flo
 
     def rk_overall_der(z, y):
 
-        t_curr = y[0]
+        p_curr = y[0]
         v_curr = y[1]
 
-        state.update_state(t=t_curr, v=v_curr)
+        state.update_state(t=fluid_eos.t(v=v_curr, p=p_curr), v=v_curr)
 
         dp = - scipy.constants.g / v_curr
-        dt = state.r / state.cp / state.dpdt * dp
         dv = (1 - state.r / state.cp) / state.dpdv * dp
 
-        return [dt, dv]
+        return [dp, dv]
 
     def rk_overall_bifase(z, y):
 
@@ -82,7 +81,7 @@ def calculate_vertical(fluid_eos: CubicEOS, state_in: FluidState, res_depth: flo
 
         else:
 
-            integrator = RK45(rk_overall_der, prev_z, [state.t, state.v], res_depth)
+            integrator = RK45(rk_overall_der, prev_z, [state.p, state.v], res_depth)
 
         prev_bifase_condition = state.bifase
         while integrator.status == 'running':
@@ -109,7 +108,7 @@ def calculate_vertical(fluid_eos: CubicEOS, state_in: FluidState, res_depth: flo
 
             i += 1
 
-    return fluid_eos.get_state(t=output[0], v=output[1])
+    return fluid_eos.get_state(p=output[0], v=output[1])
 
 
 def evaluate_system(fluid_eos: CubicEOS, in_state: FluidState, depth_res: float, t_res: float):

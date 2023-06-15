@@ -24,13 +24,7 @@ class system:
         max_i = np.argmax(self.point_mass[1:-1])
         self.point_speed[max_i + 1] = overall_k / self.point_mass[max_i + 1]
 
-        self.timeline = {
-
-            "t": [self.t],
-            "pos": [deepcopy(self.point_pos[1:-1])],
-            "spd": [deepcopy(self.point_speed[1:-1])]
-
-        }
+        self.__init_timeline()
 
     def __init_interaction_matrices(self):
 
@@ -57,6 +51,16 @@ class system:
                 ]) / m_tot
 
             )
+
+    def __init_timeline(self):
+
+        self.timeline = {
+
+            "t": [self.t],
+            "pos": [deepcopy(self.point_pos[1:-1])],
+            "spd": [deepcopy(self.point_speed[1:-1])]
+
+        }
 
     def step(self):
 
@@ -90,20 +94,15 @@ class system:
 
             )
 
-    def generate_animation(self, steps=200, frames=1000, filename="equipartition_simulation.gif"):
+    def evaluate_steps(self, steps, reset_timeline=False):
 
-        filepath = os.path.join(CALCULATION_DIR, "1 - EOS analysis", "other", "output", filename)
         pbar = tqdm(desc="Calculating Steps", total=steps)
-        self.timeline = {
 
-            "t": [self.t],
-            "pos": [deepcopy(self.point_pos[1:-1])],
-            "spd": [deepcopy(self.point_speed[1:-1])]
+        if reset_timeline:
 
-        }
+            self.__init_timeline()
 
         for i in range(steps):
-
             self.step()
             self.timeline["t"].append(self.t)
             self.timeline["pos"].append(deepcopy(self.point_pos[1:-1]))
@@ -112,6 +111,14 @@ class system:
             pbar.update(1)
 
         pbar.close()
+
+    def generate_animation(self, steps=None, frames=1000, filename="equipartition_simulation.gif"):
+
+        filepath = os.path.join(CALCULATION_DIR, "1 - EOS analysis", "other", "output", filename)
+
+        if steps is not None:
+
+            self.evaluate_steps(steps, reset_timeline=True)
 
         fig, ax, sc = self.__init_plot()
         dt_tot = self.timeline["t"][-1] - self.timeline["t"][0]
@@ -128,6 +135,47 @@ class system:
         anim.save(filepath)
         pbar.close()
 
+    def plot_kinetic_energy(self,  steps=None, samples=100, min_range=-3, filename="kinetic_energy_evolution.png"):
+
+        filepath = os.path.join(CALCULATION_DIR, "1 - EOS analysis", "other", "output", filename)
+
+        if steps is not None:
+            self.evaluate_steps(steps, reset_timeline=True)
+
+        if len(self.timeline["t"]) > 1:
+
+            t_start = self.timeline["t"][0]
+            dt_tot = self.timeline["t"][-1] - self.timeline["t"][0]
+
+            old_time = 0.
+            times = np.logspace(min_range, 0, samples)
+
+            time_list = list()
+            kin_list = list()
+
+            for i in range(len(times)):
+
+                new_time = times[i] * dt_tot + t_start
+
+                time_list.append(times[i])
+                kin_list.append(self.__evaluate_mean_kinetic_energy([old_time, new_time]))
+
+                old_time = new_time
+
+            kin_list = np.array(kin_list).T
+
+            fig, ax = plt.subplots()
+
+            for i in range(self.n_points):
+
+                ax.plot(time_list, kin_list[i])
+
+            ax.set_xlabel("time")
+            ax.set_ylabel("kinetic energy")
+            ax.set_xscale("log")
+            plt.show()
+            fig.savefig(filepath)
+
     def __init_plot(self):
 
         fig, ax = plt.subplots()
@@ -143,26 +191,15 @@ class system:
 
     def __update_scatter(self, time):
 
-        positions = self.point_pos[1:-1]
+        i = self.__get_timeline_position(time)
+        t_0 = self.timeline["t"][i]
+        t_1 = self.timeline["t"][i + 1]
+        x = (time - t_0) / (t_1 - t_0)
 
-        if len(self.timeline["t"]) > 1:
+        p_0 = self.timeline["pos"][i]
+        p_1 = self.timeline["pos"][i +  1]
 
-            if self.timeline["t"][0] < time < self.timeline["t"][-1]:
-
-                for i in range(len(self.timeline["t"])):
-
-                    if time < self.timeline["t"][i]:
-
-                        t_0 = self.timeline["t"][i - 1]
-                        t_1 = self.timeline["t"][i]
-                        x = (time - t_0) / (t_1 - t_0)
-
-                        p_0 = self.timeline["pos"][i - 1]
-                        p_1 = self.timeline["pos"][i]
-
-                        positions = p_1 * x + p_0 * (1 - x)
-
-                        break
+        positions = p_1 * x + p_0 * (1 - x)
 
         new_points = np.array([
 
@@ -174,9 +211,55 @@ class system:
         self.sc.set_offsets(new_points)
         return self.sc
 
+    def __evaluate_mean_kinetic_energy(self, time_interval):
+
+        i_min = self.__get_timeline_position(time_interval[0])
+        i_max = self.__get_timeline_position(time_interval[1])
+        mass = self.point_mass[1:-1]
+
+        if i_min == i_max:
+
+            spd = self.timeline["spd"][i_min]
+            return mass * np.power(spd, 2)
+
+        kin_sum = 0.
+        count = 0.
+        for i in range(i_min, i_max):
+
+            spd = self.timeline["spd"][i]
+            dt = self.timeline["t"][i + 1] - self.timeline["t"][i]
+            kin_sum += dt * (mass * np.power(spd, 2))
+            count += dt
+
+        return kin_sum / count
+
+    def __get_timeline_position(self, time):
+
+        if self.timeline["t"][0] <= time <= self.timeline["t"][-1]:
+
+            for i in range(len(self.timeline["t"])):
+
+                if time < self.timeline["t"][i]:
+
+                    return i - 1
+
+            return len(self.timeline["t"]) - 1
+
+        else:
+
+            if time < self.timeline["t"][0]:
+
+                return 0
+
+            return len(self.timeline["t"]) - 1
+
 
 # %%-------------------------------------   GENERATE ANIMATION                  -------------------------------------> #
 n_points = 25
-k = 30 * (n_points / 10)
+k = 150 * (n_points / 10)
 sys = system(n_points=n_points, overall_k=k)
 sys.generate_animation(steps=1500, frames=2000)
+
+
+# %%-------------------------------------   PLOT KINETIC ENERGY EVOLUTION       -------------------------------------> #
+sys.plot_kinetic_energy(steps=500000, samples=60, min_range=-5)
