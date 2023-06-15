@@ -1,10 +1,11 @@
-# %%
+# %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
 from main_classes.cubic_eos import CubicEOS
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy as np
 
-# %%
+
+# %%-------------------------------------   FUNCTION DEFINITION                 -------------------------------------> #
 fluid = CubicEOS(
 
     p_crit=1e6,
@@ -19,7 +20,7 @@ t_sat, z_l_2, z_v_2 = fluid.t_sat(p_sat)
 check = t_sat / fluid.t_crit
 
 
-# %%
+# %%-------------------------------------   CALCULATE EOS                       -------------------------------------> #
 n_points = 500
 ps = np.logspace(-15, 0, n_points)
 ts = np.array([0.2, 0.5, 0.7, 0.8, 0.9, 0.99])
@@ -63,12 +64,8 @@ for k in range(len(ts)):
 
 pbar.close()
 
-# %%-------------------------------------   CALCULATE REFPROP                   -------------------------------------> #
 
-# for k in range(len(ts)):
-#
-#     plt.plot(v_rels[:, k], fug_rels[:, k])
-
+# %%-------------------------------------   PLOT RESULTS                        -------------------------------------> #
 i = 0
 plt.plot(p_rels[:, i], fug_liqs[:, i])
 plt.plot(p_rels[:, i], fug_vaps[:, i])
