@@ -78,7 +78,7 @@ class CubicEOS(ABC):
 
         return FluidState(self)
 
-    def get_sat_state(self, p=None, t=None, liquid=True):
+    def get_sat_state(self, p=None, t=None, which="liq"):
 
         if (t is None) and (p is None):
 
@@ -94,15 +94,24 @@ class CubicEOS(ABC):
             p_sat = p
             t_sat, z_l, z_v = self.t_sat(p)
 
-        if liquid:
+        if which.lower() == "both":
 
-            v_sat = (z_l * self.r_spc * t_sat) / p_sat
+            v_l = (z_l * self.r_spc * t_sat) / p_sat
+            v_v = (z_v * self.r_spc * t_sat) / p_sat
+
+            return FluidState(self, t_sat, v_l), FluidState(self, t_sat, v_v)
 
         else:
 
-            v_sat = (z_v * self.r_spc * t_sat) / p_sat
+            if which.lower() == "liq" or "liquid" or "l":
 
-        return FluidState(self, t_sat, v_sat)
+                v_sat = (z_l * self.r_spc * t_sat) / p_sat
+
+            else:
+
+                v_sat = (z_v * self.r_spc * t_sat) / p_sat
+
+            return FluidState(self, t_sat, v_sat)
 
     def p(self, t, v):
 
@@ -232,7 +241,8 @@ class CubicEOS(ABC):
 
         if get_approximate:
 
-            return self.__approx_sat(y, get_p=get_p)
+            # return self.__approx_sat(y, get_p=get_p)
+            return self.__iterate_sat(y, get_p=get_p)
 
         else:
 
@@ -284,7 +294,7 @@ class CubicEOS(ABC):
 
         elif y == y_crit:
 
-            return x_crit, self.v_crit, self.v_crit
+            return x_crit, self.z_crit, self.z_crit
 
         return np.nan, np.nan, np.nan
 
@@ -479,7 +489,7 @@ class FluidState:
         self.__ddpddv = None
 
         # Integrals
-        self.__int_cp = None
+        self.__int_t_ddpddt = None
         self.__int_t_dpdt = None
         self.__int_rv = None
         self.__int_rtv = None
@@ -596,7 +606,7 @@ class FluidState:
 
         if self.__cp is None:
 
-            self.__cp = self.fluid_solver.cp_ideal + self.r - self.fluid_solver.r_spc + self.int_cp
+            self.__cp = self.fluid_solver.cp_ideal + self.r - self.fluid_solver.r_spc + self.int_t_ddpddt
 
         return self.__cp
 
@@ -620,7 +630,7 @@ class FluidState:
             eta_r1 = eta - self.fluid_solver.r_1
             eta_r2 = eta - self.fluid_solver.r_2
 
-            self.__dpdt = 1 / b * (r / (eta - 1) - da / (b * eta_r1 * eta_r2))
+            self.__dpdt = (r / (eta - 1) - da / (b * eta_r1 * eta_r2)) / b
 
         return self.__dpdt
 
@@ -633,11 +643,11 @@ class FluidState:
             eta_r2 = self.eta - self.fluid_solver.r_2
             r1r2 = self.fluid_solver.r1r2
 
-            a0 = self.beta * self.p / self.fluid_solver.b
+            a0 = self.p / self.beta
             a1 = 1 / ((self.eta - 1) ** 2)
             a2 = (2 * self.eta + r1r2) / ((eta_r1 * eta_r2) ** 2)
 
-            self.__dpdv = a0 * (a1 + a2 * self.alpha)
+            self.__dpdv = a0 * (a2 * self.alpha - a1)
 
         return self.__dpdv
 
@@ -648,12 +658,13 @@ class FluidState:
 
             t = self.__t
             dda = self.fluid_solver.dda(t)
+            b = self.fluid_solver.b
 
             eta = self.eta
             eta_r1 = eta - self.fluid_solver.r_1
             eta_r2 = eta - self.fluid_solver.r_2
 
-            self.__ddpddt = - dda / (eta_r1 * eta_r2)
+            self.__ddpddt = - dda / (b ** 2 * eta_r1 * eta_r2)
 
         return self.__ddpddt
 
@@ -687,13 +698,13 @@ class FluidState:
     # <--------------------------------------------------------------------------------------------------------------> #
 
     @property
-    def int_cp(self):
+    def int_t_ddpddt(self):
 
-        if self.__int_cp is None:
+        if self.__int_t_ddpddt is None:
 
-            self.__int_cp = - self.__t * self.fluid_solver.dda(self.__t) * self.u
+            self.__int_t_ddpddt = - self.__t * self.fluid_solver.dda(self.__t) * self.u
 
-        return self.__int_cp
+        return self.__int_t_ddpddt
 
     @property
     def int_t_dpdt(self):

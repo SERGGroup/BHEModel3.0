@@ -39,6 +39,7 @@ class RKEOS(CubicEOS):
 
         return t_l
 
+    @property
     def sat_coefficients(self):
 
         return COEFFICIENTS["RK"]

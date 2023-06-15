@@ -9,7 +9,7 @@ import os
 
 
 # %%-------------------------------------   T_SAT CALCULATIONS                  -------------------------------------> #
-fluid = RKEOS(
+fluid = VdWEOS(
 
     p_crit=1e6,
     t_crit=1e5,
@@ -18,17 +18,19 @@ fluid = RKEOS(
 
 )
 
-p_rels = np.logspace(0, -30, num=1500)
+p_rels = np.logspace(0, -2, num=1500)
 t_rels = np.zeros(p_rels.shape)
 
 for i in range(len(p_rels)):
 
-    t_sat, zl, zv= fluid.t_sat(p_rels[i] * fluid.p_crit)
+    t_sat, zl, zv = fluid.t_sat(p_rels[i] * fluid.p_crit)
     t_rels[i] = t_sat / fluid.t_crit
+
 
 # %%-------------------------------------   PLOT RESULTS                        -------------------------------------> #
 
-reg = np.poly1d(np.polyfit(np.log(p_rels), np.log(t_rels), 10))
+reg = np.poly1d(np.polyfit(np.log(p_rels), 1 / t_rels, 6))
+
 def f_reg(x_in):
 
     x = np.log(x_in)
@@ -38,19 +40,19 @@ def f_reg(x_in):
 
         y = y * x + c
 
-    return np.exp(y)
+    return 1 / y
+
 
 fig, axs = plt.subplots(1, 2, figsize=(12, 5), dpi=300)
 
 for ax in axs:
 
-    ax.plot(p_rels, t_rels, label="$T_{sat}$")
-    ax.plot(p_rels, f_reg(p_rels), label="Reg. Results")
+    ax.plot(p_rels, 1 / t_rels, label="$T_{sat}$")
+    ax.plot(p_rels, 1 / f_reg(p_rels), label="Reg. Results")
     ax.set_xscale("log")
-    ax.set_yscale("log")
 
     ax.set_xlabel("$p_{rel}$ [-]")
-    ax.set_ylabel("$T_{rel}$ [-]")
+    ax.set_ylabel("$1 / T_{rel}$ [-]")
     ax.yaxis.set_major_formatter(ticker.StrMethodFormatter("{x:.2f}"))
     ax.yaxis.set_minor_formatter(ticker.StrMethodFormatter("{x:.2f}"))
     ax.grid(visible=True, which="both")
@@ -59,7 +61,7 @@ for ax in axs:
 cu_lims = {
 
     "x": (0.5, 1.1),
-    "y": (0.9,  1.01),
+    "y": (0.9,  1.25),
 
 }
 
