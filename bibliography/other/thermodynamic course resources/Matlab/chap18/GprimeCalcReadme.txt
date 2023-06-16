@@ -1,0 +1,1 @@
+The file GprimeCalc.m will be available soon. See the excel version.

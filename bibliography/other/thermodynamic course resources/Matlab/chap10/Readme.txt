@@ -1,0 +1,1 @@
+See Matlab/TextExamples/chap10 for adiatbatic flash

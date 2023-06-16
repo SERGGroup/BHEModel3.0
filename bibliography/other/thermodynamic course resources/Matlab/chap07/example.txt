@@ -1,0 +1,27 @@
+Set the fluid to Argon: look for the *****Input section***** in the 
+file to set the propsRow.
+
+The T and P are 105.6 K and 0.496 MPa. A container is 1L and contains 
+1 mole. What is the fraction of vapor/liquid?
+
+Enter T and P in the workspace and run Preos.m
+
+Results:
+Z= 0.897123  0.015681
+ans =
+V(cm^3/mol)= 1588.066740  27.758560
+ans =
+fugacity (MPa)= 0.449384  0.449903
+ans =
+Hdep (J/mol)= -222.933032  -6002.507074
+
+We can verify that the vapor and liquid are at equilibrium because 
+the fugacities are equal (within precision of specified P, T).
+
+The overall molar volume from the problem statement is
+1000cm^3  / 1 mol = 1000 cm^3 /mol
+
+The quality equation for overall volume is then
+1000 = q V.v + (1-q) * V.l
+
+using V.v = 1588.07 and V.l = 27.76, the quality can be found. 

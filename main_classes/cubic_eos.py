@@ -773,7 +773,8 @@ class FluidState:
 
         if self.__g is None:
 
-            self.__g = self.fluid_solver.r_spc * np.log(self.__v / (self.__v - self.fluid_solver.b))
+            a_0 = self.fluid_solver.r_spc * self.__t / self.p
+            self.__g = self.fluid_solver.r_spc * np.log(a_0 / (self.__v - self.fluid_solver.b))
 
         return self.__g
 

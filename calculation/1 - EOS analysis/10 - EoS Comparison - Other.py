@@ -1,7 +1,7 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
+from main_classes import VdWEOS, RKEOS, SRKEOS, PREOS
 from main_classes.constant import CALCULATION_DIR
 from REFPROPConnector import ThermodynamicPoint
-from main_classes import VdWEOS, RKEOS, SRKEOS
 import matplotlib.pyplot as plt
 from itertools import cycle
 from tqdm import tqdm
