@@ -1,1 +1,1 @@
-from .subclasses import RKEOS, SRKEOS, VdWEOS
+from .subclasses import RKEOS, SRKEOS, VdWEOS, PREOS

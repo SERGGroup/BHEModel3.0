@@ -1,7 +1,7 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
+from main_classes import VdWEOS, RKEOS, SRKEOS, PREOS
 from main_classes.constant import CALCULATION_DIR
 from REFPROPConnector import ThermodynamicPoint
-from main_classes import VdWEOS, RKEOS, SRKEOS
 import matplotlib.pyplot as plt
 from itertools import cycle
 from tqdm import tqdm
@@ -42,11 +42,12 @@ for fluid in fluids:
     vdw_fluid = VdWEOS(t_crit=t_crit, p_crit=p_crit, cp_ideal=cps[k], m_molar=m_mols[k], acntr=acntrs[k])
     srk_fluid = SRKEOS(t_crit=t_crit, p_crit=p_crit, cp_ideal=cps[k], m_molar=m_mols[k], acntr=acntrs[k])
     rk_fluid = RKEOS(t_crit=t_crit, p_crit=p_crit, cp_ideal=cps[k], m_molar=m_mols[k], acntr=acntrs[k])
+    pr_fluid = PREOS(t_crit=t_crit, p_crit=p_crit, cp_ideal=cps[k], m_molar=m_mols[k], acntr=acntrs[k])
     k += 1
 
     for t_mod in [0.5, 0.7, 0.9, 1, 2]:
 
-        v_rels = np.zeros((4, n_points))
+        v_rels = np.zeros((5, n_points))
         t_curr = vdw_fluid.t_crit * t_mod
 
         for i in range(len(p_rels)):
@@ -64,7 +65,8 @@ for fluid in fluids:
             v_rels[0, i] = vdw_fluid.v(t=t_curr, p=p_curr) / vdw_fluid.v_crit
             v_rels[1, i] = rk_fluid.v(t=t_curr, p=p_curr) / rk_fluid.v_crit
             v_rels[2, i] = srk_fluid.v(t=t_curr, p=p_curr) / srk_fluid.v_crit
-            v_rels[3, i] = v_real / v_crit_rp
+            v_rels[3, i] = pr_fluid.v(t=t_curr, p=p_curr) / pr_fluid.v_crit
+            v_rels[4, i] = v_real / v_crit_rp
 
             pbar.update(1)
 
@@ -72,7 +74,8 @@ for fluid in fluids:
         line_vdw = ax.plot(v_rels[0,:], p_rels, label="VdW EoS", linestyle=style, color="tab:blue")
         line_rk = ax.plot(v_rels[1,:], p_rels, label="RK EoS", linestyle=style, color="tab:orange")
         line_srk = ax.plot(v_rels[2,:], p_rels, label="SRK EoS", linestyle=style, color="tab:green")
-        line_rp = ax.plot(v_rels[3,:], p_rels, label="REFPROP", linestyle=style, color="black")
+        line_pr = ax.plot(v_rels[3,:], p_rels, label="PR EoS", linestyle=style, color="tab:gray")
+        line_rp = ax.plot(v_rels[4,:], p_rels, label="REFPROP", linestyle=style, color="black")
 
     ax.set_xscale("log")
     ax.set_yscale("log")
@@ -82,7 +85,7 @@ for fluid in fluids:
     ax.set_ylabel("$p_{rel}$ [-]")
     ax.set_title(fluid)
 
-    lines = [line_vdw[0], line_rk[0], line_srk[0], line_rp[0]]
+    lines = [line_vdw[0], line_rk[0], line_srk[0], line_pr[0], line_rp[0]]
     labs = [l.get_label() for l in lines]
     ax.legend(lines, labs)
 

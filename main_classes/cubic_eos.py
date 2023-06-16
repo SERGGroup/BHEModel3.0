@@ -593,7 +593,7 @@ class FluidState:
 
         if self.__r is None:
 
-            self.__r = - self.__t * self.dpdt ** 2 / self.dpdv
+            self.__r = (- self.__t * self.dpdt ** 2 / self.dpdv)
 
         return self.__r
 
@@ -639,15 +639,16 @@ class FluidState:
 
         if self.__dpdv is None:
 
-            eta_r1 = self.eta - self.fluid_solver.r_1
-            eta_r2 = self.eta - self.fluid_solver.r_2
-            r1r2 = self.fluid_solver.r1r2
+            b = self.fluid_solver.b
+            r1 = self.fluid_solver.r_1
+            r2 = self.fluid_solver.r_2
 
-            a0 = self.p / self.beta
-            a1 = 1 / ((self.eta - 1) ** 2)
-            a2 = (2 * self.eta + r1r2) / ((eta_r1 * eta_r2) ** 2)
+            a_0 = 1 / (self.eta - 1) ** 2
+            a_1 = 2 * self.eta + (r1 + r2)
+            a_2 = ((self.eta - r1) * (self.eta - r2))**2
+            a_3 = self.fluid_solver.r_spc * self.t / b ** 2
 
-            self.__dpdv = a0 * (a2 * self.alpha - a1)
+            self.__dpdv = (a_1 / a_2 * self.alpha - a_0) * a_3
 
         return self.__dpdv
 
@@ -748,18 +749,18 @@ class FluidState:
         if self.__u is None:
 
             eta = self.eta
-            eta_r1 = eta - self.fluid_solver.r_1
-            eta_r2 = eta - self.fluid_solver.r_2
+            r_1 = self.fluid_solver.r_1
+            r_2 = self.fluid_solver.r_2
 
             try:
 
-                if eta_r1 == eta_r2:
+                if r_1 == r_2:
 
-                    self.__u = 1 / (- self.fluid_solver.b * eta_r1)
+                    self.__u = 1 / (- self.fluid_solver.b * (eta - r_1))
 
                 else:
 
-                    self.__u = np.log(eta_r1 / eta_r2) / (self.fluid_solver.b * (eta_r2 - eta_r1))
+                    self.__u = np.log((eta - r_1) / (eta - r_2)) / (self.fluid_solver.b * (r_1 - r_2))
 
             except:
 

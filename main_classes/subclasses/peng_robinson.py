@@ -1,8 +1,8 @@
-from main_classes.cubic_eos import CubicEOS, get_real_res
+from main_classes.cubic_eos import CubicEOS
 import numpy as np
 
 
-class SRKEOS(CubicEOS):
+class PREOS(CubicEOS):
 
     def a(self, t):
 
@@ -20,16 +20,13 @@ class SRKEOS(CubicEOS):
 
     def init_coefficient(self):
 
-        self.z_crit = 1 / 3
+        self.z_crit = 0.307401
         self.v_crit = self.z_crit * self.r_spc * self.t_crit / self.p_crit
 
-        self.r_1 = 0
-        self.r_2 = -1
-        self.__f_acntr = 0.48 + 1.57 * self.acntr - 0.176 * self.acntr ** 2
+        self.r_1 = -np.sqrt(2) - 1
+        self.r_2 = np.sqrt(2) - 1
+        self.__f_acntr = 0.37464 + 1.5422 * self.acntr - 0.26992 * self.acntr ** 2
 
         # v_crit_0 = self.v_crit
-        self.a_0 = (np.power(2, 1/3) - 1) / 9 * (self.r_spc * self.t_crit) ** 2 / self.p_crit
-        self.b = (np.power(2, 1/3) - 1) / 3 * self.r_spc * self.t_crit / self.p_crit
-
-        self.a_0 = 0.42747 * (self.r_spc * self.t_crit) ** 2 / self.p_crit
-        self.b = 0.08664 * self.r_spc * self.t_crit / self.p_crit
+        self.a_0 = 0.45724 * (self.r_spc * self.t_crit) ** 2 / self.p_crit
+        self.b = 0.07780 * self.r_spc * self.t_crit / self.p_crit

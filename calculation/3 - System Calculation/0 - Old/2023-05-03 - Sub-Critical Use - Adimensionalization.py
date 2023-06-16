@@ -1,5 +1,6 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
-from main_classes.rk_fluid_classes import RKFluid, evaluate_system
+from main_classes.geothermal_system import evaluate_system
+from main_classes.subclasses.redlich_kwong import RKEOS
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy as np
@@ -18,7 +19,7 @@ pbar = tqdm(desc="Calculating Points", total=len(t_rels) * len(depths) * len(t_c
 
 for k in range(len(t_crits)):
 
-    fluid = RKFluid(
+    fluid = RKEOS(
 
         p_crit=1e7,
         t_crit=t_crits[k],
@@ -37,8 +38,7 @@ for k in range(len(t_crits)):
             t_inj = t_rels[i] * fluid.t_crit
             t_rock = t_inj + grad * depth / 1000
 
-            liq_state = fluid.get_sat_state(t=t_inj, liquid=True)
-            vap_state = fluid.get_sat_state(t=t_inj, liquid=False)
+            liq_state, vap_state = fluid.get_sat_state(t=t_inj, which="both")
 
             if p_mult == 1:
 
