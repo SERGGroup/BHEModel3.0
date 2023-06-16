@@ -1,5 +1,5 @@
 from main_classes.support.p_sat_calculation import p_sat_rel, t_sat_rel
-from scipy.optimize import fsolve, root_scalar
+from scipy.optimize import root_scalar
 from abc import ABC, abstractmethod
 from copy import deepcopy
 from ctypes import Union
@@ -57,7 +57,7 @@ class CubicEOS(ABC):
     def __init__(
 
             self, p_crit=7380000., t_crit=304.1,
-            cp_ideal: Union[float, list] = 845.85,
+            cp_ideal = 845.85,
             m_molar=0.04401, acntr=0.239
 
     ):
@@ -822,6 +822,13 @@ class CubicEOS(ABC):
     @abstractmethod
     def init_coefficient(self):
 
+        """
+
+            Function that must be used by the subclass to initialize
+            coefficients to be used during the calculations
+            TO BE IMPLEMENTED IN SUBCLASS
+
+        """
         alpha = self.r_spc * self.t_crit
         beta = np.power(2, 1 / 3) - 1
 
@@ -840,65 +847,37 @@ class CubicEOS(ABC):
 
     def iterate_t(self, p, v):
 
+        """
+
+            Function that iterate the EoS to find the temperature given
+            the pressure and the specific volume. Can be overwritten in
+            subclasses if analytic solution are possible
+
+            :param p: pressure in [Pa]
+            :param v: specific volume in [m^3/kg]
+
+            :return: t: temperature in [K]
+
+        """
+
         def root_funct(t_rel):
 
             t = t_rel * self.t_crit
             return p - self.r_spc * t / (v - self.b) + self.a(t) / (v * (v + self.b))
 
+        # Initialize the calculation with the Van der Walls solution
         A = self.r_spc / (v - self.b_vdw)
         B = self.a_vdw / (v * (v + self.b_vdw))
         t_0 = (p + B) / A
 
+        # Find the root of the function
         sol = root_scalar(root_funct, x0=t_0 / self.t_crit, x1=1)
         return sol.root * self.t_crit
 
     @property
     def sat_coefficients(self):
+
         return None
-
-    def iterate_coefficients(self, x_0):
-
-        self.r12 = self.r_1 * self.r_2
-        self.r1r2 = self.r_1 + self.r_2
-
-        beta_1 = self.p_crit / (self.r_spc * self.t_crit)
-        alpha_1 = self.a(self.t_crit) / (self.r_spc * self.t_crit) / self.a_0
-        a_3 = self.r_1 ** 2 + self.r_2 ** 2 + 3 * self.r_1 * self.r_2
-
-        def f_iter(x):
-
-            if len(x) > 2:
-
-                self.v_crit, self.a_0, self.b = x
-
-            else:
-
-                self.a_0, self.b = x
-
-            alpha = alpha_1 * self.a_0 / self.b
-            beta = beta_1 * self.b
-            eta = self.v_crit / self.b
-
-            a1 = (eta - 1)
-            a2 = (eta - self.r_1) * (eta - self.r_2)
-
-            p = 1 / a1 - alpha / a2 - beta
-            dpdv = (2 * eta + self.r1r2) * alpha / a2 ** 2 - 1 / a1 ** 2
-            ddpddv = 1 / a1 ** 3 - (3 * eta ** 2 - eta * self.r1r2 + a_3) * alpha / a2 ** 3
-
-            if len(x) > 2:
-
-                return [p, dpdv, ddpddv]
-
-            else:
-
-                return [dpdv, ddpddv]
-
-        if len(x_0) > 2:
-            self.v_crit, self.a_0, self.b = fsolve(f_iter, x_0)
-
-        else:
-            self.a_0, self.b = fsolve(f_iter, x_0)
 
 
 class FluidState:
