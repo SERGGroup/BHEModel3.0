@@ -19,7 +19,7 @@ def calculate_expansion(fluid_eos: CubicEOS, state_in: FluidState, p_out):
 
     if p_out < fluid_eos.p_crit:
 
-        liq_state, vap_state = fluid_eos.get_sat_state(p=p_out, which="both")
+        liq_state, vap_state = fluid_eos.get_sat_state(p=p_out)
         x_curr = (state_in.s - liq_state.s) / (vap_state.s - liq_state.s)
 
         if 0 < x_curr < 1:
@@ -54,7 +54,7 @@ def calculate_vertical(fluid_eos: CubicEOS, state_in: FluidState, res_depth: flo
         p_curr = y[0]
         h_curr = state_in.h - z * scipy.constants.g
 
-        liq_state, vap_state = fluid_eos.get_sat_state(p=p_curr, which="both")
+        liq_state, vap_state = fluid_eos.get_sat_state(p=p_curr)
         x_curr = (h_curr - liq_state.h) / (vap_state.h - liq_state.h)
         v_curr = x_curr * (vap_state.v - liq_state.v) + liq_state.v
 

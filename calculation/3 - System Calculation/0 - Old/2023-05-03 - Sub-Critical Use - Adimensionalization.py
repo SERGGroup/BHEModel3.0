@@ -38,7 +38,7 @@ for k in range(len(t_crits)):
             t_inj = t_rels[i] * fluid.t_crit
             t_rock = t_inj + grad * depth / 1000
 
-            liq_state, vap_state = fluid.get_sat_state(t=t_inj, which="both")
+            liq_state, vap_state = fluid.get_sat_state(t=t_inj)
 
             if p_mult == 1:
 

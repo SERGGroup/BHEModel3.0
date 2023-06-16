@@ -87,7 +87,7 @@ for fluid in fluids:
 
             curr_state = eos_fluid.get_state(p=p_curr, t=t_curr)
             r_res[1, i] = curr_state.r
-            cp_res[1, i] = curr_state.cp - curr_state.fluid_solver.cp_ideal
+            cp_res[1, i] = curr_state.cp - curr_state.cp_ideal
             dpdts[1, i] = curr_state.dpdt
             dpdvs[1, i] = curr_state.dpdv
 
