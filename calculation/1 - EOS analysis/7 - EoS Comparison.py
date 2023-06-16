@@ -19,9 +19,11 @@ m_mols = [0.01801528, 0.04401, 0.01604]
 acntrs = [0.344, 0.239, 0.011]
 cps = [1864.84159, 845.846, 2230.12]
 
+eos_names = ["VdW EoS", "RK EoS", "SRK EoS", "PR EoS"]
+eos_colors = ["tab:blue", "tab:orange", "tab:green", "tab:gray"]
+alphas = [0.35, 1, 1, 1]
 
 # %%-------------------------------------   CALCULATIONS                        -------------------------------------> #
-
 k = 0
 fig, axs = plt.subplots(1, len(fluids), figsize=(6 * len(fluids), 5), dpi=300)
 pbar = tqdm(desc="Calculating Points", total=n_points * len(t_mods) * len(fluids))
@@ -45,7 +47,7 @@ for fluid in fluids:
     pr_fluid = PREOS(t_crit=t_crit, p_crit=p_crit, cp_ideal=cps[k], m_molar=m_mols[k], acntr=acntrs[k])
     k += 1
 
-    for t_mod in [0.5, 0.7, 0.9, 1, 2]:
+    for t_mod in t_mods:
 
         v_rels = np.zeros((5, n_points))
         t_curr = vdw_fluid.t_crit * t_mod
@@ -71,11 +73,22 @@ for fluid in fluids:
             pbar.update(1)
 
         style = next(styles)
-        line_vdw = ax.plot(v_rels[0,:], p_rels, label="VdW EoS", linestyle=style, color="tab:blue")
-        line_rk = ax.plot(v_rels[1,:], p_rels, label="RK EoS", linestyle=style, color="tab:orange")
-        line_srk = ax.plot(v_rels[2,:], p_rels, label="SRK EoS", linestyle=style, color="tab:green")
-        line_pr = ax.plot(v_rels[3,:], p_rels, label="PR EoS", linestyle=style, color="tab:gray")
-        line_rp = ax.plot(v_rels[4,:], p_rels, label="REFPROP", linestyle=style, color="black")
+        lines = list()
+
+        for j in range(len(eos_names)):
+
+            line_eos = ax.plot(
+
+                v_rels[j, :], p_rels,
+                label=eos_names[j], linestyle=style,
+                color=eos_colors[j], alpha=alphas[j]
+
+            )
+
+            lines.append(line_eos[0])
+
+        line_rp = ax.plot(v_rels[4, :], p_rels, label="REFPROP", linestyle=style, color="black")
+        lines.append(line_rp[0])
 
     ax.set_xscale("log")
     ax.set_yscale("log")
@@ -85,7 +98,6 @@ for fluid in fluids:
     ax.set_ylabel("$p_{rel}$ [-]")
     ax.set_title(fluid)
 
-    lines = [line_vdw[0], line_rk[0], line_srk[0], line_pr[0], line_rp[0]]
     labs = [l.get_label() for l in lines]
     ax.legend(lines, labs)
 

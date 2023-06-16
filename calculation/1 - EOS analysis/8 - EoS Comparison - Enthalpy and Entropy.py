@@ -18,7 +18,11 @@ fluids = ["Water", "Carbon Dioxide", "Methane"]
 m_mols = [0.01801528, 0.04401, 0.01604]
 acntrs = [0.344, 0.239, 0.011]
 cps = [1864.84159, 845.846, 2230.12]
-eos_class = PREOS
+
+eos_classes = [VdWEOS, RKEOS, SRKEOS, PREOS]
+eos_names = ["VdW EoS", "RK EoS", "SRK EoS", "PR EoS"]
+eos_colors = ["tab:blue", "tab:orange", "tab:green", "tab:gray"]
+alphas = [0.35, 1, 1, 1]
 
 
 # %%-------------------------------------   CALCULATIONS                        -------------------------------------> #
@@ -40,19 +44,25 @@ for fluid in fluids:
     h_crit_rp = tp.get_variable("h")
     s_crit_rp = tp.get_variable("s")
 
-    eos_fluid = eos_class(t_crit=t_crit, p_crit=p_crit, cp_ideal=cps[k], m_molar=m_mols[k], acntr=acntrs[k])
-    crit_state = eos_fluid.get_state(t=t_crit, p=p_crit)
+    fluids = list()
+    crit_states = list()
 
-    for t_mod in [0.5, 0.7, 0.9, 1, 2]:
+    for eos_class in eos_classes:
 
-        h_rels = np.zeros((2, n_points))
-        s_rels = np.zeros((2, n_points))
+        fluid_curr = eos_class(t_crit=t_crit, p_crit=p_crit, cp_ideal=cps[k], m_molar=m_mols[k], acntr=acntrs[k])
+        crit_states.append(fluid_curr.get_state(t=t_crit, p=p_crit))
+        fluids.append(fluid_curr)
 
-        t_curr = eos_fluid.t_crit * t_mod
+    for t_mod in t_mods:
+
+        h_rels = np.zeros((5, n_points))
+        s_rels = np.zeros((5, n_points))
+
+        t_curr = fluids[0].t_crit * t_mod
 
         for i in range(len(p_rels)):
 
-            p_curr = p_rels[i] * eos_fluid.p_crit
+            p_curr = p_rels[i] * fluids[0].p_crit
 
             tp.set_variable("P", p_curr)
             tp.set_variable("T", t_curr)
@@ -68,9 +78,13 @@ for fluid in fluids:
             h_rels[0, i] = h_res - h_crit_rp
             s_rels[0, i] = s_res - s_crit_rp
 
-            curr_state = eos_fluid.get_state(p=p_curr, t=t_curr)
-            h_rels[1, i] = curr_state.h - crit_state.h
-            s_rels[1, i] = curr_state.s - crit_state.s
+            j = 0
+            for curr_fluid in fluids:
+
+                curr_state = curr_fluid.get_state(p=p_curr, t=t_curr)
+                h_rels[j + 1, i] = curr_state.h - crit_states[j].h
+                s_rels[j + 1, i] = curr_state.s - crit_states[j].s
+                j += 1
 
             pbar.update(1)
 
@@ -78,18 +92,32 @@ for fluid in fluids:
 
         h_rels = h_rels / 1e3
         s_rels = s_rels / 1e3
-        dh = h_rels[1,0] - h_rels[0, 0]
-        line_rp = axs[0, k].plot(h_rels[0,:], p_rels, label="REFPROP", linestyle=style, color="black")
-        line_eos = axs[0, k].plot(h_rels[1,:] - dh, p_rels, label="RK EoS", linestyle=style, color="tab:orange")
 
-        ds = s_rels[1, 0] - s_rels[0, 0]
-        axs[1, k].plot(s_rels[0, :], p_rels, label="REFPROP", linestyle=style, color="black")
-        axs[1, k].plot(s_rels[1, :] - ds, p_rels, label="RK EoS", linestyle=style, color="tab:orange")
+        lines = list()
+        for j in range(len(fluids)):
 
-    lines = [line_rp[0], line_eos[0]]
+            dh = h_rels[1 + j, 0] - h_rels[0, 0]
+            ds = s_rels[1 + j, 0] - s_rels[0, 0]
+
+            axs[1, k].plot(s_rels[1 + j, :] - ds, p_rels, linestyle=style, color=eos_colors[j], alpha=alphas[j])
+            line_eos = axs[0, k].plot(
+
+                h_rels[1 + j, :] - dh, p_rels,
+                linestyle=style, color=eos_colors[j],
+                label=eos_names[j], alpha=alphas[j]
+
+            )
+
+            lines.append(line_eos[0])
+
+        line_rp = axs[0, k].plot(h_rels[0, :], p_rels, label="REFPROP", linestyle=style, color="black")
+        axs[1, k].plot(s_rels[0, :], p_rels, linestyle=style, color="black")
+        lines.append(line_rp[0])
+
     labs = [l.get_label() for l in lines]
 
     for j in range(len(x_labels)):
+
         axs[j, k].set_yscale("log")
         axs[j, k].grid(visible=True, which="major")
         axs[j, k].grid(visible=True, which="minor", linewidth=0.75, alpha=0.25)
