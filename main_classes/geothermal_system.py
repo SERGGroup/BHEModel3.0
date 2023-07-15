@@ -25,12 +25,14 @@ def calculate_expansion(fluid_eos: CubicEOS, state_in: FluidState, p_out):
         if 0 < x_curr < 1:
 
             v_curr = x_curr * (vap_state.v - liq_state.v) + liq_state.v
-            return state.update_state(p=p_out, v=v_curr)
+            state.update_state(p=p_out, v=v_curr)
+            return state
 
-    integrator = RK45(rk_overall_der, state_in.p, [state.v], p_out, rtol=1e-06, atol=1e-07)
+    integrator = RK45(rk_overall_der, state_in.p, [state.v], p_out)
     output = integrator.y
+    state.update_state(p=p_out, v=output[0])
 
-    return fluid_eos.get_state(p=p_out, v=output[0])
+    return state
 
 
 def calculate_vertical(fluid_eos: CubicEOS, state_in: FluidState, res_depth: float, downward=True):
@@ -120,10 +122,33 @@ def evaluate_system(fluid_eos: CubicEOS, in_state: FluidState, depth_res: float,
     return [in_state, res_in, res_out, sys_out]
 
 
-def evaluate_surface(fluid_eos: CubicEOS, in_state: FluidState, depth_res: float, t_res: float):
+def evaluate_surface(fluid_eos: CubicEOS, geo_system_points):
 
-    system_points = evaluate_system(fluid_eos, in_state, depth_res, t_res)
-    sys_out = system_points[-1]
+    geo_in = geo_system_points[0]
+    geo_out = geo_system_points[-1]
 
     # Expansion Work Evaluation
+    exp_out = calculate_expansion(fluid_eos, geo_out, geo_in.p)
+    cool_out = calculate_expansion(fluid_eos, geo_in, geo_out.p)
 
+    dh_exp_min = cool_out.h - geo_in.h
+    dh_exp_max = geo_out.h - exp_out.h
+    dh_cool_min = exp_out.h - geo_in.h
+    dh_cool_max = geo_out.h - cool_out.h
+
+    ds_exp_min = cool_out.s - geo_in.s
+    ds_exp_max = geo_out.s - exp_out.s
+    ds_cool_min = exp_out.s - geo_in.s
+    ds_cool_max = geo_out.s - cool_out.s
+
+    ex_exp_min = dh_exp_min - geo_in.t * ds_exp_min
+    ex_exp_max = dh_exp_max - geo_in.t * ds_exp_max
+    ex_cool_min = dh_cool_min - geo_in.t * ds_cool_min
+    ex_cool_max = dh_cool_max - geo_in.t * ds_cool_max
+
+    return [
+
+        [[dh_exp_min, dh_exp_max], [dh_cool_min, dh_cool_max]],
+        [[ex_exp_min, ex_exp_max], [ex_cool_min, ex_cool_max]]
+
+    ]

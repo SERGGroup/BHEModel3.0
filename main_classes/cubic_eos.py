@@ -57,8 +57,8 @@ class CubicEOS(ABC):
     def __init__(
 
             self, p_crit=7380000., t_crit=304.1,
-            cp_ideal = 845.85,
-            m_molar=0.04401, acntr=0.239
+            cp_ideal=845.85, m_molar=0.04401,
+            acntr=0.239
 
     ):
 
@@ -945,10 +945,22 @@ class FluidState:
                 self.__liquid_state = FluidState(self.fluid_solver, t=self.__t, v=v_liq)
                 self.__vapour_state = FluidState(self.fluid_solver, t=self.__t, v=v_vap)
 
-    def update_state(self, t=None, v=None):
+    def update_state(self, t=None, v=None, p=None):
 
-        self.__t = t
-        self.__v = v
+        if (t is not None) and (v is not None):
+
+            self.__t = t
+            self.__v = v
+
+        elif t is None:
+
+            self.__t = self.fluid_solver.t(v, p)
+            self.__v = v
+
+        else:
+
+            self.__t = t
+            self.__v = self.fluid_solver.v(t, p)
 
         self.__init_parameters()
 
