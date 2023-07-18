@@ -1,8 +1,7 @@
-from main_classes.support.p_sat_calculation import p_sat_rel, t_sat_rel
+from main_classes.eos.support.p_sat_calculation import p_sat_rel, t_sat_rel
 from scipy.optimize import root_scalar
 from abc import ABC, abstractmethod
 from copy import deepcopy
-from ctypes import Union
 import scipy.constants
 import numpy as np
 
@@ -31,7 +30,7 @@ class CubicEOS(ABC):
         It cannot be implemented as it is, but it provides the subclasses with most of the calculation procedures.
 
         Procedures implemented in this class:
-            - EoS solution (root finding of the cubic equation, Saturation Condition Identification, physical root selection)
+            - eos solution (root finding of the cubic equation, Saturation Condition Identification, physical root selection)
 
             - State Class initialization
 
@@ -50,7 +49,7 @@ class CubicEOS(ABC):
         :param t_crit: critical temperature [K]
         :param cp_ideal: ideal gas specific heat capacity [J/kg K] or list containing params for a regression
         :param m_molar: molar mass [kg/mol]
-        :param acntr: acentricity factor (omega) - if required by the EoS [-]
+        :param acntr: acentricity factor (omega) - if required by the eos [-]
 
     """
 
@@ -58,7 +57,7 @@ class CubicEOS(ABC):
 
             self, p_crit=7380000., t_crit=304.1,
             cp_ideal=845.85, m_molar=0.04401,
-            acntr=0.239
+            acntr=0.239, reduced_cp_coeff=False
 
     ):
 
@@ -66,15 +65,21 @@ class CubicEOS(ABC):
 
         self.p_crit = p_crit
         self.t_crit = t_crit
-        self.__cp_ideal = cp_ideal
         self.m_molar = m_molar
         self.acntr = acntr
 
-        if type(self.__cp_ideal) == list:
+        self.__reduced_cp_coeff = reduced_cp_coeff
+
+        if hasattr(cp_ideal, '__iter__'):
 
             # If a list of coefficient is provided, it has to be
             # reversed for numerical reason (see the self.cp_ideal(t) method)
+            self.__cp_ideal = list(cp_ideal)
             self.__cp_ideal.reverse()
+
+        else:
+
+            self.__cp_ideal = [cp_ideal]
 
         self.__init_coefficients()
 
@@ -84,7 +89,7 @@ class CubicEOS(ABC):
 
             Initialize the coefficient to be used for the calculation. It also call init_coefficient() that must be
             implemented in subclasses and should initialize self.a_0, self.b, self.z_crit, self.r_1 and self.r_2
-            according to the selected EoS.
+            according to the selected eos.
 
         """
 
@@ -202,11 +207,11 @@ class CubicEOS(ABC):
                 
                 If the provided temperature is less than the critical one, check if the specific volume provided lies 
                 between the saturation condition. If its so it returns the saturation pressure, otherwise return the 
-                result of the EoS. 
+                result of the eos. 
                 
                 As the p_sat calculation takes time, if an approximation is available the code uses it in order to 
                 check the likelihood for the specific point to be in the saturation condition. If so, it iterates the 
-                EoS to indentify the exact saturation pressure otherwise it simply returns the EoS prediction
+                eos to indentify the exact saturation pressure otherwise it simply returns the eos prediction
                             
             """
 
@@ -215,7 +220,7 @@ class CubicEOS(ABC):
 
             if p_sat is None:
 
-                # Approximation are not allowed for the selected EoS (None has been returned),
+                # Approximation are not allowed for the selected eos (None has been returned),
                 # the code iterates p_sat in any condition
 
                 p_sat, z_l, z_v = self.p_sat(t, get_approximate=False)
@@ -255,7 +260,7 @@ class CubicEOS(ABC):
 
         # If the execution has reached this point, it means that
         # the specific volume is outside the saturation range, hence
-        # the direct result of the EoS is returned
+        # the direct result of the eos is returned
 
         z_l, z_v = self.z(t=t, v=v)
         return z_l * self.r_spc * t / v
@@ -279,11 +284,11 @@ class CubicEOS(ABC):
 
                 If the provided pressure is less than the critical one, check if the specific volume provided lies 
                 between the saturation condition. If its so it returns the saturation temperature, otherwise return the 
-                result of the EoS. 
+                result of the eos. 
 
                 As the t_sat calculation takes time, if an approximation is available the code uses it in order to 
                 check the likelihood for the specific point to be in the saturation condition. If so, it iterates the 
-                EoS to indentify the exact saturation pressure otherwise it simply returns the EoS prediction
+                eos to indentify the exact saturation pressure otherwise it simply returns the eos prediction
 
             """
 
@@ -292,7 +297,7 @@ class CubicEOS(ABC):
 
             if t_sat is None:
 
-                # Approximation are not allowed for the selected EoS (None has been returned),
+                # Approximation are not allowed for the selected eos (None has been returned),
                 # the code iterates t_sat in any condition
 
                 t_sat, z_l, z_v = self.t_sat(p, get_approximate=False)
@@ -332,7 +337,7 @@ class CubicEOS(ABC):
 
         # If the execution has reached this point, it means that
         # the specific volume is outside the saturation range, hence
-        # the direct result of the EoS is returned
+        # the direct result of the eos is returned
 
         z_l, z_v = self.z(v=v, p=p)
         return p * v / (self.r_spc * z_l)
@@ -350,11 +355,11 @@ class CubicEOS(ABC):
 
         """
 
-        # The method identify physical roots of the EoS. If only one root exist z_l == z_v, hence the corresponding
+        # The method identify physical roots of the eos. If only one root exist z_l == z_v, hence the corresponding
         # specific volume can be directly returned. Otherwise, the method evaluates the fugacity of both the conditions
         # and returns the condition with the smallest one.
 
-        # EoS root identification
+        # eos root identification
         z_l, z_v = self.z(t=t, p=p)
 
         if z_l == z_v:
@@ -386,7 +391,7 @@ class CubicEOS(ABC):
 
         """
 
-            Evaluate the compressibility factor from the EoS according to the provided state variable, the user should
+            Evaluate the compressibility factor from the eos according to the provided state variable, the user should
             provide two of them (i.e. fluid.z(t=300, p=1E5) or fluid.z(v=0.05, p=1E5)). If multiple solution are
             possible it returns different values for z_l and z_v, otherwise it returns the same value for both.
 
@@ -400,7 +405,7 @@ class CubicEOS(ABC):
 
         if (t is not None) and (v is not None):
 
-            # If T and v are provided it directly evaluate p from the EoS
+            # If T and v are provided it directly evaluate p from the eos
             # (only 1 solution exists)
 
             p = self.r_spc * t / (v - self.b) - self.a(t) / ((v - self.b * self.r_1) * (v - self.b * self.r_2))
@@ -427,8 +432,8 @@ class CubicEOS(ABC):
 
         elif (p is not None) and (v is not None):
 
-            # If v and p are provided it iterates the EoS to identify the resulting temperature,
-            # For simpler EoS, iterate_t(p, v) can be overwritten in subclasses to allow for explicit solutions
+            # If v and p are provided it iterates the eos to identify the resulting temperature,
+            # For simpler eos, iterate_t(p, v) can be overwritten in subclasses to allow for explicit solutions
             # (only 1 solution exists)
 
             t = self.iterate_t(p, v)
@@ -670,12 +675,12 @@ class CubicEOS(ABC):
 
         """
 
-        # Identify the root of the EoS
+        # Identify the root of the eos
         z_l, z_v = self.z(t=t, p=p)
 
         if not z_l == z_v:
 
-            # If the EoS has two real roots, the error committed is the difference between the two fugacities
+            # If the eos has two real roots, the error committed is the difference between the two fugacities
             # (NOTE: The error is POSITIVE if the current condition is on the VAPOUR SIDE of the diagram)
 
             f_l = self.fug(t, p, z_l)
@@ -685,7 +690,7 @@ class CubicEOS(ABC):
 
         else:
 
-            # If the EoS has one real root the method use the xi parameter to understand it the current condition is on
+            # If the eos has one real root the method use the xi parameter to understand it the current condition is on
             # the vapour or on the liquid side of the diagram.
             # (see the documentation for additional information)
             #
@@ -730,29 +735,86 @@ class CubicEOS(ABC):
 
         """
 
-        if type(self.__cp_ideal) == list:
+        # "self.__cp_ideal" is a list, a polinomial regression has to be evaluated.
+        # The polinomial is evaluated in the form:
+        #
+        #       y = ((a_0 * T + a_1) * T + a_2) * T + a_3 ...
+        #
+        # For this reason, the order of the coefficients has to be reversed if compared
+        # to the standard polinomial representation
 
-            # If "self.__cp_ideal" is a list, a polinomial regression has to be evaluated.
-            # The polinomial is evaluated in the form:
-            #
-            #       y = ((a_0 * T + a_1) * T + a_2) * T + a_3 ...
-            #
-            # For this reason, the order of the coefficients has to be reversed if compared
-            # to the standard polinomial representation
+        cp_ideal = 0.
 
-            cp_ideal = 0.
-            # noinspection PyTypeChecker
-            for cp_coefficient in self.__cp_ideal:
+        if self.__reduced_cp_coeff:
+            t = t / self.t_crit
 
-                cp_ideal = cp_ideal * t + cp_coefficient
+        for cp_coefficient in self.__cp_ideal:
 
-        else:
-
-            # If "self.__cp_ideal" is a float, no regression is needed
-            # and the value is directly returned
-            cp_ideal = self.__cp_ideal
+            cp_ideal = cp_ideal * t + cp_coefficient
 
         return cp_ideal
+
+    def h_ideal(self, t) -> float:
+
+        """
+
+            Return the ideal gas heat capacity for the given temperature
+
+            :param t: temperature in [K]
+            :return: ideal gas heat capacity [J/(kg * K)]
+
+        """
+
+        # "self.__cp_ideal" is a list, a polinomial regression has to be evaluated.
+        # The polinomial is evaluated in the form:
+        #
+        #       y = ((a_0 * T + a_1) * T + a_2) * T + a_3 ...
+        #
+        # For this reason, the order of the coefficients has to be reversed if compared
+        # to the standard polinomial representation
+
+        cp_int = 0.
+        len_list = len(self.__cp_ideal)
+        if self.__reduced_cp_coeff:
+            t = t / self.t_crit
+
+        for i in range(len_list):
+
+            cp_coefficient = self.__cp_ideal[i]
+            cp_int = cp_int * t + cp_coefficient / (len_list - i)
+
+        return cp_int * t
+
+    def s_ideal_integral(self, t) -> float:
+
+        """
+
+            Return the ideal gas heat capacity for the given temperature
+
+            :param t: temperature in [K]
+            :return: ideal gas heat capacity [J/(kg * K)]
+
+        """
+
+        # "self.__cp_ideal" is a list, a polinomial regression has to be evaluated.
+        # The polinomial is evaluated in the form:
+        #
+        #       y = ((a_0 * T + a_1) * T + a_2) * T + a_3 ...
+        #
+        # For this reason, the order of the coefficients has to be reversed if compared
+        # to the standard polinomial representation
+
+        cp_int = 0.
+        len_list = len(self.__cp_ideal)
+        if self.__reduced_cp_coeff:
+            t = t / self.t_crit
+
+        for i in range(len_list - 1):
+
+            cp_coefficient = self.__cp_ideal[i]
+            cp_int = cp_int * t + cp_coefficient / (len_list - (i + 1))
+
+        return cp_int * t + self.__cp_ideal[-1] * np.log(t)
 
     @property
     def cp_coefficients(self):
@@ -782,11 +844,11 @@ class CubicEOS(ABC):
     def a(self, t):
         """
 
-            Return the attraction term of the EoS
+            Return the attraction term of the eos
             TO BE IMPLEMENTED IN SUBCLASS
 
             :param t: temperature in [K]
-            :return: attraction term of the EoS [m^5/(kg * s^2)]
+            :return: attraction term of the eos [m^5/(kg * s^2)]
 
         """
         return self.a_0 / np.sqrt(t)
@@ -795,11 +857,11 @@ class CubicEOS(ABC):
     def da(self, t):
         """
 
-            Return the derivative of the attraction term of the EoS
+            Return the derivative of the attraction term of the eos
             TO BE IMPLEMENTED IN SUBCLASS
 
             :param t: temperature in [K]
-            :return: derivative of the attraction term of the EoS [m^5/(kg * s^2 * K)]
+            :return: derivative of the attraction term of the eos [m^5/(kg * s^2 * K)]
 
         """
         return -self.a_0 / (2 * np.power(t, 3/2))
@@ -809,11 +871,11 @@ class CubicEOS(ABC):
 
         """
 
-            Return the second derivative of the attraction term of the EoS
+            Return the second derivative of the attraction term of the eos
             TO BE IMPLEMENTED IN SUBCLASS
 
             :param t: temperature in [K]
-            :return: second derivative of the attraction term of the EoS [m^5/(kg * s^2 * K^2)]
+            :return: second derivative of the attraction term of the eos [m^5/(kg * s^2 * K^2)]
 
         """
 
@@ -849,7 +911,7 @@ class CubicEOS(ABC):
 
         """
 
-            Function that iterate the EoS to find the temperature given
+            Function that iterate the eos to find the temperature given
             the pressure and the specific volume. Can be overwritten in
             subclasses if analytic solution are possible
 
@@ -903,6 +965,9 @@ class FluidState:
         # Additional State Variables
         self.__r = None
         self.__cp = None
+        self.__cv = None
+        self.__h_ideal = None
+        self.__s_ideal = None
         self.__cp_ideal = None
 
         # Derivatives
@@ -1000,7 +1065,7 @@ class FluidState:
 
             else:
 
-                h_ideal = self.cp_ideal * self.__t
+                h_ideal = self.h_ideal
                 h_dep = self.int_t_dpdt + self.p * self.__v - self.fluid_solver.r_spc * self.__t
                 self.__h = h_ideal + h_dep
 
@@ -1017,11 +1082,15 @@ class FluidState:
 
             else:
 
-                s_ideal = self.cp_ideal * np.log(self.__t) - self.fluid_solver.r_spc * np.log(self.p)
+                s_ideal = self.s_ideal
                 s_dep = - self.int_rv
                 self.__s = s_ideal + s_dep
 
         return self.__s
+
+    def ex(self, t_ref):
+
+        return self.h - t_ref * self.s
 
     @property
     def r(self):
@@ -1046,6 +1115,15 @@ class FluidState:
         return self.__cp
 
     @property
+    def cv(self):
+
+        if self.__cv is None:
+
+            self.__cv = self.cp - self.r
+
+        return self.__cv
+
+    @property
     def cp_ideal(self):
 
         if self.__cp_ideal is None:
@@ -1053,6 +1131,24 @@ class FluidState:
             self.__cp_ideal = self.fluid_solver.cp_ideal(self.t)
 
         return self.__cp_ideal
+
+    @property
+    def h_ideal(self):
+
+        if self.__h_ideal is None:
+
+            self.__h_ideal = self.fluid_solver.h_ideal(self.t)
+
+        return self.__h_ideal
+
+    @property
+    def s_ideal(self):
+
+        if self.__s_ideal is None:
+
+            self.__s_ideal = self.fluid_solver.s_ideal_integral(self.t) - self.fluid_solver.r_spc * np.log(self.p)
+
+        return self.__s_ideal
 
     # <--------------------------------------------------------------------------------------------------------------> #
     # <--------------------------------------------------------------------------------------------------------------> #

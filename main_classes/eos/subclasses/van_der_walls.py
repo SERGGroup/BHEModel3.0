@@ -1,4 +1,4 @@
-from main_classes.cubic_eos import CubicEOS
+from main_classes.eos.cubic_eos import CubicEOS
 
 
 class VdWEOS(CubicEOS):

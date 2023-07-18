@@ -1,8 +1,9 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
 from main_classes.geothermal_system import evaluate_system, evaluate_surface
-from main_classes.subclasses import SRKEOS, RKEOS
+from main_classes.support.simple_integrator import SimpleIntegrator
 from main_classes.constant import CALCULATION_DIR
 from REFPROPConnector import ThermodynamicPoint
+from main_classes.eos import SRKEOS, PREOS
 from scipy.integrate import RK45
 import matplotlib.pyplot as plt
 import scipy.constants
@@ -19,26 +20,23 @@ def new_dict():
         "s": list(),
         "rho": list(),
 
-        "dT": list(),
-        "drho": list()
+        "cv": list(),
+        "R": list(),
 
     }
 
+p0 = 6e6
+t0 = 300.
+fluid = "Carbon Dioxide"
 
 # %%-------------------------------------   RP FUNCTION DEFINITION              -------------------------------------> #
 R = scipy.constants.R
 g = scipy.constants.g
 
-fluid = "Carbon Dioxide"
 tp_in = ThermodynamicPoint([fluid], [1], unit_system="MASS BASE SI")
-tp_in_mol = ThermodynamicPoint([fluid], [1], unit_system="MOLAR BASE SI")
+tp_in.set_variable("P", p0)
+tp_in.set_variable("T", t0)
 
-tp_in.set_variable("T", 300)
-tp_in.set_variable("P", 1e5)
-tp_in_mol.set_variable("T", 300)
-tp_in_mol.set_variable("P", 1e5)
-
-m_fluid = tp_in.get_variable("rho") / tp_in_mol.get_variable("rho")
 tp_curr = tp_in.duplicate()
 points_overall = new_dict()
 
@@ -64,23 +62,43 @@ def rk_overall_der(z, y):
     r_dag = - t_curr * dpdt ** 2 / dpdv
 
     dv = 1 / (dpdv * (1 + r_dag/cv))
-    dt = dtdp + dtdv * dv
-
     drho = -rho_curr**2 * dv
-
-    points_overall["p"].append(p_curr)
-    points_overall["rho"].append(rho_curr)
-    points_overall["T"].append(tp_curr.get_variable("T"))
-    points_overall["s"].append(tp_curr.get_variable("s"))
-
-    points_overall["dT"].append(dt)
-    points_overall["drho"].append(drho)
 
     return [drho]
 
+def rk_overall_der_T(z, y):
+
+    p_curr = z
+    t_curr = y[0]
+
+    tp_curr.set_variable("p", p_curr)
+    tp_curr.set_variable("T", t_curr)
+
+    cv = tp_curr.get_variable("cv")
+    rho_curr = tp_curr.get_variable("rho")
+
+    dpdrho = tp_curr.get_derivative("P", "rho", "T")
+    dtdrho = tp_curr.get_derivative("T", "rho", "P")
+    dpdv = - rho_curr ** 2 * dpdrho
+    dtdv = - rho_curr ** 2 * dtdrho
+
+    dpdt = tp_curr.get_derivative("P", "T", "rho")
+    dtdp = tp_curr.get_derivative("T", "P", "rho")
+
+    r_dag = - t_curr * dpdt ** 2 / dpdv
+
+    dv = 1 / (dpdv * (1 + r_dag/cv))
+    dt = dtdp + dtdv * dv
+
+    return [dt]
+
 
 # %%-------------------------------------   SRK FUNCTION DEFINITION             -------------------------------------> #
-fluid_eos = SRKEOS()
+fluid_eos = PREOS(
+
+    cp_ideal=tp_in.get_variable("CP0")
+
+)
 curr_state = fluid_eos.get_state(t=300, p=1e5)
 
 points_srk = new_dict()
@@ -91,39 +109,63 @@ def rk_srk_der(z, y):
     v_curr = y[0]
 
     curr_state.update_state(p=p_curr, v=v_curr)
-    dv = (1 - curr_state.r / curr_state.cp) / curr_state.dpdv
+    dv = 1 / (curr_state.dpdv * (1 + curr_state.r / curr_state.cv))
+
+    return [dv]
+
+def rk_srk_der_T(z, y):
+
+    p_curr = z
+    t_curr = y[0]
+
+    curr_state.update_state(p=p_curr, t=t_curr)
+    dt = curr_state.r / curr_state.cp / curr_state.dpdt
+
+    return [dt]
+
+
+# %%-------------------------------------   RK INTEGRATION                      -------------------------------------> #
+rho0 = tp_in.get_variable("rho")
+integrate_temperature = True
+
+p_ratio = 2
+p1 = p0 * p_ratio
+
+points_srk = new_dict()
+points_overall = new_dict()
+
+
+if integrate_temperature:
+    integrator_srk = SimpleIntegrator(rk_srk_der_T, p0, [tp_in.get_variable("T")], p1, n_steps=200)
+    integrator_overall = RK45(rk_overall_der_T, p0, [tp_in.get_variable("T")], p1)
+
+else:
+    integrator_srk = SimpleIntegrator(rk_srk_der, p0, [1/tp_in.get_variable("rho")], p1, n_steps=200)
+    integrator_overall = RK45(rk_overall_der, p0, [rho0], p1)
+
+while integrator_srk.status == 'running':
+
+    integrator_srk.step()
 
     points_srk["p"].append(curr_state.p)
     points_srk["rho"].append(1 / curr_state.v)
     points_srk["T"].append(curr_state.t)
     points_srk["s"].append(curr_state.s)
 
-    points_srk["dT"].append(1)
-    points_srk["drho"].append(-(1/curr_state.v)**2 * dv)
-
-    return [dv]
-
-
-# %%-------------------------------------   RK INTEGRATION                      -------------------------------------> #
-p0 = 0.2 * tp_in.RPHandler.PC
-tp_in.set_variable("P", p0)
-tp_in.set_variable("Q", 1)
-rho0 = tp_in.get_variable("rho")
-
-p_ratio = 2
-p1 = p0 * p_ratio
-
-points_overall = new_dict()
-points_srk = new_dict()
-
-integrator_overall = RK45(rk_overall_der, p0, [rho0], p1)
-integrator_srk = RK45(rk_srk_der, p0, [rho0], p1)
-
-while integrator_srk.status == 'running':
-    integrator_srk.step()
+    points_srk["cv"].append(curr_state.cv)
+    points_srk["R"].append(curr_state.r)
 
 while integrator_overall.status == 'running':
+
     integrator_overall.step()
+
+    points_overall["p"].append(tp_curr.get_variable("P"))
+    points_overall["rho"].append(tp_curr.get_variable("rho"))
+    points_overall["T"].append(tp_curr.get_variable("T"))
+    points_overall["s"].append(tp_curr.get_variable("s"))
+
+    points_overall["cv"].append(tp_curr.get_variable("cv"))
+    points_overall["R"].append(tp_curr.get_variable("cp") - tp_curr.get_variable("cv"))
 
 output_overall = integrator_overall.y
 output_srk = integrator_srk.y
@@ -157,7 +199,7 @@ df_simple = df_simple.drop_duplicates(["p"])
 base_x = np.linspace(min(df_simple["p"]), max(df_simple["p"]), 100)
 
 axs = [ax, ax_twn]
-keys = ["T", "rho"]
+keys = ["cv", "rho"]
 labels = ["Temperature [C]", "Density [kg/$m^3$]"]
 colors = ["tab:blue", "orange"]
 scales = ["log", "std"]

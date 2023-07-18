@@ -2,7 +2,6 @@
 from REFPROPConnector import ThermodynamicPoint
 import matplotlib.pyplot as plt
 import matplotlib.pylab as pl
-from matplotlib import ticker
 from tqdm import tqdm
 import numpy as np
 

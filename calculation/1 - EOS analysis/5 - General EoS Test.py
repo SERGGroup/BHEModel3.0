@@ -1,12 +1,12 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
-from main_classes.cubic_eos import CubicEOS
+from main_classes.eos import VdWEOS
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy as np
 
 
 # %%-------------------------------------   FUNCTION DEFINITION                 -------------------------------------> #
-fluid = CubicEOS(
+fluid = VdWEOS(
 
     p_crit=1e6,
     t_crit=1e5,

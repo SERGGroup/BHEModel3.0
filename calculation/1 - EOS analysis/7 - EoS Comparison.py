@@ -19,9 +19,10 @@ m_mols = [0.01801528, 0.04401, 0.01604]
 acntrs = [0.344, 0.239, 0.011]
 cps = [1864.84159, 845.846, 2230.12]
 
-eos_names = ["VdW EoS", "RK EoS", "SRK EoS", "PR EoS"]
+eos_names = ["VdW eos", "RK eos", "SRK eos", "PR eos"]
 eos_colors = ["tab:blue", "tab:orange", "tab:green", "tab:gray"]
 alphas = [0.35, 1, 1, 1]
+
 
 # %%-------------------------------------   CALCULATIONS                        -------------------------------------> #
 k = 0
@@ -108,4 +109,4 @@ plt.show()
 
 
 # %%-------------------------------------   SAVE PLOT                           -------------------------------------> #
-fig.savefig(os.path.join(CALCULATION_DIR, "1 - EOS analysis", "output", "7 - EoS Comparison.png"))
+fig.savefig(os.path.join(CALCULATION_DIR, "1 - EOS analysis", "output", "7 - eos Comparison.png"))

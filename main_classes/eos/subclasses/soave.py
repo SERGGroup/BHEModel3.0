@@ -1,4 +1,4 @@
-from main_classes.cubic_eos import CubicEOS, get_real_res
+from main_classes.eos.cubic_eos import CubicEOS
 import numpy as np
 
 

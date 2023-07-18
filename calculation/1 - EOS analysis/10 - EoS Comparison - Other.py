@@ -96,10 +96,10 @@ for fluid in fluids:
         style = next(styles)
 
         line_rp = axs[0, k].plot(r_res[0,:], p_rels, label="REFPROP", linestyle=style, color="black")
-        line_eos = axs[0, k].plot(r_res[1,:], p_rels, label="RK EoS", linestyle=style, color="tab:orange")
+        line_eos = axs[0, k].plot(r_res[1,:], p_rels, label="RK eos", linestyle=style, color="tab:orange")
 
         axs[1, k].plot(cp_res[0, :], p_rels, label="REFPROP", linestyle=style, color="black")
-        axs[1, k].plot(cp_res[1, :], p_rels, label="RK EoS", linestyle=style, color="tab:orange")
+        axs[1, k].plot(cp_res[1, :], p_rels, label="RK eos", linestyle=style, color="tab:orange")
 
     lines = [line_rp[0], line_eos[0]]
     labs = [l.get_label() for l in lines]
@@ -129,5 +129,5 @@ plt.show()
 
 
 # %%-------------------------------------   SAVE PLOT                           -------------------------------------> #
-filepath = os.path.join(CALCULATION_DIR, "1 - EOS analysis", "output", "8 - EoS Comparison - Other.png")
+filepath = os.path.join(CALCULATION_DIR, "1 - EOS analysis", "output", "8 - eos Comparison - Other.png")
 fig.savefig(filepath)

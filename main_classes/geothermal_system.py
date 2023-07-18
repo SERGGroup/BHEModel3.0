@@ -1,4 +1,4 @@
-from main_classes.cubic_eos import CubicEOS, FluidState
+from main_classes.eos.cubic_eos import CubicEOS, FluidState
 from scipy.integrate import RK45
 import scipy.constants
 

@@ -1,6 +1,6 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
 from main_classes.constant import CALCULATION_DIR
-from main_classes.subclasses import RKEOS, VdWEOS
+from main_classes.eos import RKEOS, VdWEOS
 from matplotlib.patches import Rectangle
 import matplotlib.pyplot as plt
 from matplotlib import ticker

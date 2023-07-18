@@ -1,5 +1,5 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
-from main_classes import RKEOS, evaluate_system
+from main_classes import RKEOS, evaluate_surface
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 import numpy as np
@@ -53,7 +53,7 @@ for i in range(len(t_rels)):
     sat_points[i, :] = np.array([liq_state.p, liq_state.v])
     sat_points[-(i + 1), :] = np.array([vap_state.p, vap_state.v])
 
-    sys_states = evaluate_system(fluid, input_state, depth, t_rock)
+    sys_states = evaluate_surface(fluid, input_state, depth, t_rock)
     dps[i] = (sys_states[-1].p - sys_states[0].p) / fluid.p_crit
     betas[i] = sys_states[-1].p / sys_states[0].p
     states_list.append(sys_states)

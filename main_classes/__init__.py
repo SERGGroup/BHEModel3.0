@@ -1,2 +1,3 @@
-from .support import direct_flash, base_quality_flash, iteration_flash
-from .subclasses import RKEOS, SRKEOS, VdWEOS, PREOS
+from .geothermal_system import evaluate_system, evaluate_surface
+from .eos import RKEOS, PREOS, SRKEOS, VdWEOS
+from .support import calculate_flash

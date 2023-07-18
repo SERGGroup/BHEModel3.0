@@ -9,18 +9,40 @@ import numpy as np
 import os
 
 
-# %%-------------------------------------   INIT CALCULATIONS                   -------------------------------------> #
+# %%-------------------------------------   CALCULATIONS OPTIONS                -------------------------------------> #
 n_points = 200
 t_mods = [0.5, 0.7, 0.9, 1, 2]
 p_rels = np.logspace(-4, 1, n_points)
 
+use_base_cp = True
+simplify_reading = False
+
+
+# %%-------------------------------------   INIT CALCULATIONS                   -------------------------------------> #
 fluids = ["Water", "Carbon Dioxide", "Methane"]
 m_mols = [0.01801528, 0.04401, 0.01604]
 acntrs = [0.344, 0.239, 0.011]
-cps = [1864.84159, 845.846, 2230.12]
+
+if use_base_cp:
+
+    reduced_cp_coeff = True
+    cp0_crits = np.array([[2046.5174407791164, 850.1158291727041, 2084.6170906624607]])
+    cp0_rel = np.array([[0.21270104, 0.79655508]])
+    cps = list(np.dot(cp0_crits.T, cp0_rel))
+
+else:
+
+    reduced_cp_coeff = False
+    cps = [
+
+        [1.78959195e+03, 1.06576195e-01, 5.88389412e-04, -1.99830366e-07],
+        [4.49897751e+02, 1.66780277e+00, -1.27243808e-03, 3.90820268e-07],
+        [1.20012469e+03, 3.24812968e+00, 7.48129676e-04, - 7.04488778e-07]
+
+    ]
 
 eos_classes = [VdWEOS, RKEOS, SRKEOS, PREOS]
-eos_names = ["VdW EoS", "RK EoS", "SRK EoS", "PR EoS"]
+eos_names = ["VdW eos", "RK eos", "SRK eos", "PR eos"]
 eos_colors = ["tab:blue", "tab:orange", "tab:green", "tab:gray"]
 alphas = [0.35, 1, 1, 1]
 
@@ -38,31 +60,41 @@ for fluid in fluids:
 
     t_crit = tp.RPHandler.TC
     p_crit = tp.RPHandler.PC
+    t_ref = t_crit*2
+    p_ref = p_crit*0.01
 
-    tp.set_variable("T", t_crit)
-    tp.set_variable("P", p_crit)
-    h_crit_rp = tp.get_variable("h")
-    s_crit_rp = tp.get_variable("s")
-
-    fluids = list()
+    eos_fluids = list()
     crit_states = list()
+    ref_states = list()
 
     for eos_class in eos_classes:
 
-        fluid_curr = eos_class(t_crit=t_crit, p_crit=p_crit, cp_ideal=cps[k], m_molar=m_mols[k], acntr=acntrs[k])
+        fluid_curr = eos_class(
+
+            t_crit=t_crit, p_crit=p_crit,
+            cp_ideal=cps[k], m_molar=m_mols[k],
+            acntr=acntrs[k], reduced_cp_coeff=reduced_cp_coeff
+
+        )
         crit_states.append(fluid_curr.get_state(t=t_crit, p=p_crit))
-        fluids.append(fluid_curr)
+        ref_states.append(fluid_curr.get_state(t=t_ref, p=p_ref))
+        eos_fluids.append(fluid_curr)
+
+    tp.set_variable("T", t_ref)
+    tp.set_variable("P", p_ref)
+    h_ref_rp = tp.get_variable("h")
+    s_ref_rp = tp.get_variable("s")
 
     for t_mod in t_mods:
 
         h_rels = np.zeros((5, n_points))
         s_rels = np.zeros((5, n_points))
 
-        t_curr = fluids[0].t_crit * t_mod
+        t_curr = t_crit * t_mod
 
         for i in range(len(p_rels)):
 
-            p_curr = p_rels[i] * fluids[0].p_crit
+            p_curr = p_rels[i] * eos_fluids[0].p_crit
 
             tp.set_variable("P", p_curr)
             tp.set_variable("T", t_curr)
@@ -75,15 +107,15 @@ for fluid in fluids:
                 h_res = np.nan
                 s_res = np.nan
 
-            h_rels[0, i] = h_res - h_crit_rp
-            s_rels[0, i] = s_res - s_crit_rp
+            h_rels[0, i] = h_res - h_ref_rp
+            s_rels[0, i] = s_res - s_ref_rp
 
             j = 0
-            for curr_fluid in fluids:
+            for curr_fluid in eos_fluids:
 
                 curr_state = curr_fluid.get_state(p=p_curr, t=t_curr)
-                h_rels[j + 1, i] = curr_state.h - crit_states[j].h
-                s_rels[j + 1, i] = curr_state.s - crit_states[j].s
+                h_rels[j + 1, i] = curr_state.h - ref_states[j].h
+                s_rels[j + 1, i] = curr_state.s - ref_states[j].s
                 j += 1
 
             pbar.update(1)
@@ -94,10 +126,15 @@ for fluid in fluids:
         s_rels = s_rels / 1e3
 
         lines = list()
-        for j in range(len(fluids)):
+        for j in range(len(eos_fluids)):
 
-            dh = h_rels[1 + j, 0] - h_rels[0, 0]
-            ds = s_rels[1 + j, 0] - s_rels[0, 0]
+            if simplify_reading:
+                dh = h_rels[1 + j, 0] - h_rels[0, 0]
+                ds = s_rels[1 + j, 0] - s_rels[0, 0]
+
+            else:
+                dh = 0.
+                ds = 0.
 
             axs[1, k].plot(s_rels[1 + j, :] - ds, p_rels, linestyle=style, color=eos_colors[j], alpha=alphas[j])
             line_eos = axs[0, k].plot(
@@ -135,5 +172,13 @@ plt.show()
 
 
 # %%-------------------------------------   SAVE PLOT                           -------------------------------------> #
-filepath = os.path.join(CALCULATION_DIR, "1 - EOS analysis", "output", "8 - EoS Comparison - Enthalpy and Entropy.png")
+if use_base_cp:
+
+    cp_text = "simple cp"
+
+else:
+
+    cp_text = "complex cp"
+
+filepath = os.path.join(CALCULATION_DIR, "1 - EOS analysis", "output", "8 - HS comparison {}.png".format(cp_text))
 fig.savefig(filepath)

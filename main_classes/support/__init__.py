@@ -1,1 +1,1 @@
-from .flash_calculation import direct_flash, base_quality_flash, iteration_flash
+from .flash_calculation import calculate_flash

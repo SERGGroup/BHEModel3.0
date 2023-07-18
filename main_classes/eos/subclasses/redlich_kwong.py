@@ -1,5 +1,5 @@
-from main_classes.support.p_sat_calculation import COEFFICIENTS
-from main_classes.cubic_eos import CubicEOS, get_real_res
+from main_classes.eos.support.p_sat_calculation import COEFFICIENTS
+from main_classes.eos.cubic_eos import CubicEOS, get_real_res
 import numpy as np
 
 
