@@ -1,9 +1,8 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
-from main_classes.geothermal_system import evaluate_system, evaluate_surface
 from main_classes.support.simple_integrator import SimpleIntegrator
+from main_classes.eos import SRKEOS, PREOS, convert_cp_coeff
 from main_classes.constant import CALCULATION_DIR
 from REFPROPConnector import ThermodynamicPoint
-from main_classes.eos import SRKEOS, PREOS
 from scipy.integrate import RK45
 import matplotlib.pyplot as plt
 import scipy.constants
@@ -19,14 +18,13 @@ def new_dict():
         "T": list(),
         "s": list(),
         "rho": list(),
+        "h": list(),
 
         "cv": list(),
         "R": list(),
 
     }
 
-p0 = 6e6
-t0 = 300.
 fluid = "Carbon Dioxide"
 
 # %%-------------------------------------   RP FUNCTION DEFINITION              -------------------------------------> #
@@ -34,8 +32,11 @@ R = scipy.constants.R
 g = scipy.constants.g
 
 tp_in = ThermodynamicPoint([fluid], [1], unit_system="MASS BASE SI")
-tp_in.set_variable("P", p0)
-tp_in.set_variable("T", t0)
+t_ref = tp_in.RPHandler.TC*2
+p_ref = tp_in.RPHandler.PC*0.01
+tp_ref = tp_in.duplicate()
+tp_ref.set_variable("P", t_ref)
+tp_ref.set_variable("T", p_ref)
 
 tp_curr = tp_in.duplicate()
 points_overall = new_dict()
@@ -94,11 +95,21 @@ def rk_overall_der_T(z, y):
 
 
 # %%-------------------------------------   SRK FUNCTION DEFINITION             -------------------------------------> #
+tp_in.set_variable("T", tp_in.RPHandler.TC)
+tp_in.set_variable("P", tp_in.RPHandler.PC)
+cp0_crit = tp_in.get_variable("CP0")
+
+# base_coeff = [0.79655508, 0.21270104]
+# coeff = convert_cp_coeff(base_coeff, cp0_crit, tp_in.RPHandler.TC)
+coeff = [4.49897751e+02, 1.66780277e+00, -1.27243808e-03, 3.90820268e-07]
 fluid_eos = PREOS(
 
-    cp_ideal=tp_in.get_variable("CP0")
+    t_crit=tp_in.RPHandler.TC, p_crit=tp_in.RPHandler.PC,
+    cp_ideal=coeff, m_molar=0.04401, acntr=0.239
 
 )
+
+ref_state = fluid_eos.get_state(t=t_ref, p=p_ref)
 curr_state = fluid_eos.get_state(t=300, p=1e5)
 
 points_srk = new_dict()
@@ -125,23 +136,25 @@ def rk_srk_der_T(z, y):
 
 
 # %%-------------------------------------   RK INTEGRATION                      -------------------------------------> #
-rho0 = tp_in.get_variable("rho")
+tp_in.set_variable("T", t_ref)
+tp_in.set_variable("P", p_ref)
 integrate_temperature = True
 
 p_ratio = 2
-p1 = p0 * p_ratio
+p1 = p_ref * p_ratio
 
 points_srk = new_dict()
 points_overall = new_dict()
 
-
 if integrate_temperature:
-    integrator_srk = SimpleIntegrator(rk_srk_der_T, p0, [tp_in.get_variable("T")], p1, n_steps=200)
-    integrator_overall = RK45(rk_overall_der_T, p0, [tp_in.get_variable("T")], p1)
+
+    integrator_srk = SimpleIntegrator(rk_srk_der_T, p_ref, [tp_in.get_variable("T")], p1, n_steps=30)
+    integrator_overall = RK45(rk_overall_der_T, p_ref, [tp_in.get_variable("T")], p1)
 
 else:
-    integrator_srk = SimpleIntegrator(rk_srk_der, p0, [1/tp_in.get_variable("rho")], p1, n_steps=200)
-    integrator_overall = RK45(rk_overall_der, p0, [rho0], p1)
+
+    integrator_srk = SimpleIntegrator(rk_srk_der, p_ref, [1/tp_in.get_variable("rho")], p1, n_steps=30)
+    integrator_overall = RK45(rk_overall_der, p_ref, [tp_in.get_variable("rho")], p1)
 
 while integrator_srk.status == 'running':
 
@@ -150,7 +163,8 @@ while integrator_srk.status == 'running':
     points_srk["p"].append(curr_state.p)
     points_srk["rho"].append(1 / curr_state.v)
     points_srk["T"].append(curr_state.t)
-    points_srk["s"].append(curr_state.s)
+    points_srk["s"].append(curr_state.s - ref_state.s)
+    points_srk["h"].append(curr_state.h - ref_state.h)
 
     points_srk["cv"].append(curr_state.cv)
     points_srk["R"].append(curr_state.r)
@@ -162,7 +176,8 @@ while integrator_overall.status == 'running':
     points_overall["p"].append(tp_curr.get_variable("P"))
     points_overall["rho"].append(tp_curr.get_variable("rho"))
     points_overall["T"].append(tp_curr.get_variable("T"))
-    points_overall["s"].append(tp_curr.get_variable("s"))
+    points_overall["s"].append(tp_curr.get_variable("s") - tp_ref.get_variable("s"))
+    points_overall["h"].append(tp_curr.get_variable("h") - tp_ref.get_variable("h"))
 
     points_overall["cv"].append(tp_curr.get_variable("cv"))
     points_overall["R"].append(tp_curr.get_variable("cp") - tp_curr.get_variable("cv"))
@@ -199,7 +214,7 @@ df_simple = df_simple.drop_duplicates(["p"])
 base_x = np.linspace(min(df_simple["p"]), max(df_simple["p"]), 100)
 
 axs = [ax, ax_twn]
-keys = ["cv", "rho"]
+keys = ["T", "rho"]
 labels = ["Temperature [C]", "Density [kg/$m^3$]"]
 colors = ["tab:blue", "orange"]
 scales = ["log", "std"]
@@ -225,7 +240,7 @@ for i in range(len(axs)):
     new_ovr_scatter = ax.scatter(
 
         df_overall["p"] / 1e5, df_overall[key] * corrs[i],
-        label="$R^{\dagger}$ based", color=colors[i], marker="+", zorder=200,
+        label="EoS based", color=colors[i], marker="+", zorder=200,
         s=150
 
     )
@@ -234,7 +249,7 @@ for i in range(len(axs)):
     ax.set_ylabel(labels[i], fontsize=17, labelpad=12)
     ax.xaxis.set_tick_params(labelsize=15)
     ax.yaxis.set_tick_params(labelsize=15)
-
+    #ax.set_xscale("log")
     lines.append(new_line[0])
     overall_scatters.append(new_ovr_scatter)
 

@@ -2,7 +2,6 @@
 from main_classes.constant import CALCULATION_DIR
 from REFPROPConnector import ThermodynamicPoint
 import matplotlib.pyplot as plt
-from main_classes import PREOS
 from itertools import cycle
 from tqdm import tqdm
 import numpy as np

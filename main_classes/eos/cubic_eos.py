@@ -22,6 +22,14 @@ def get_real_res(res):
     return res_1, res_2
 
 
+def convert_cp_coeff(coeff, cp_crit, t_crit):
+
+    coeff = np.array(coeff)
+    temp_crits = [t_crit**i for i in range(len(coeff))]
+
+    return np.dot((coeff / np.array(temp_crits)).T, np.array(cp_crit))
+
+
 class CubicEOS(ABC):
 
     """
@@ -57,7 +65,7 @@ class CubicEOS(ABC):
 
             self, p_crit=7380000., t_crit=304.1,
             cp_ideal=845.85, m_molar=0.04401,
-            acntr=0.239, reduced_cp_coeff=False
+            acntr=0.239
 
     ):
 
@@ -67,8 +75,6 @@ class CubicEOS(ABC):
         self.t_crit = t_crit
         self.m_molar = m_molar
         self.acntr = acntr
-
-        self.__reduced_cp_coeff = reduced_cp_coeff
 
         if hasattr(cp_ideal, '__iter__'):
 
@@ -745,9 +751,6 @@ class CubicEOS(ABC):
 
         cp_ideal = 0.
 
-        if self.__reduced_cp_coeff:
-            t = t / self.t_crit
-
         for cp_coefficient in self.__cp_ideal:
 
             cp_ideal = cp_ideal * t + cp_coefficient
@@ -775,8 +778,6 @@ class CubicEOS(ABC):
 
         cp_int = 0.
         len_list = len(self.__cp_ideal)
-        if self.__reduced_cp_coeff:
-            t = t / self.t_crit
 
         for i in range(len_list):
 
@@ -806,8 +807,6 @@ class CubicEOS(ABC):
 
         cp_int = 0.
         len_list = len(self.__cp_ideal)
-        if self.__reduced_cp_coeff:
-            t = t / self.t_crit
 
         for i in range(len_list - 1):
 
@@ -990,6 +989,7 @@ class FluidState:
         self.__alpha = None
         self.__beta = None
         self.__eta = None
+        self.__gamma_v = None
 
     def __init_saturation_condition(self):
 
@@ -1124,6 +1124,11 @@ class FluidState:
         return self.__cv
 
     @property
+    def gamma(self):
+
+        return self.cp / self.cv
+
+    @property
     def cp_ideal(self):
 
         if self.__cp_ideal is None:
@@ -1165,12 +1170,9 @@ class FluidState:
             b = self.fluid_solver.b
             r = self.fluid_solver.r_spc
             da = self.fluid_solver.da(t)
-
             eta = self.eta
-            eta_r1 = eta - self.fluid_solver.r_1
-            eta_r2 = eta - self.fluid_solver.r_2
 
-            self.__dpdt = (r / (eta - 1) - da / (b * eta_r1 * eta_r2)) / b
+            self.__dpdt = (r / (eta - 1) - da / (b * self.gamma_v)) / b
 
         return self.__dpdt
 
@@ -1184,11 +1186,10 @@ class FluidState:
             r2 = self.fluid_solver.r_2
 
             a_0 = 1 / (self.eta - 1) ** 2
-            a_1 = 2 * self.eta + (r1 + r2)
-            a_2 = ((self.eta - r1) * (self.eta - r2))**2
+            a_1 = (r1 + r2) - 2 * self.eta
             a_3 = self.fluid_solver.r_spc * self.t / b ** 2
 
-            self.__dpdv = (a_1 / a_2 * self.alpha - a_0) * a_3
+            self.__dpdv = (a_1 / self.__gamma_v**2 * self.alpha - a_0) * a_3
 
         return self.__dpdv
 
@@ -1200,12 +1201,7 @@ class FluidState:
             t = self.__t
             dda = self.fluid_solver.dda(t)
             b = self.fluid_solver.b
-
-            eta = self.eta
-            eta_r1 = eta - self.fluid_solver.r_1
-            eta_r2 = eta - self.fluid_solver.r_2
-
-            self.__ddpddt = - dda / (b ** 2 * eta_r1 * eta_r2)
+            self.__ddpddt = - dda / (b ** 2 * self.gamma_v)
 
         return self.__ddpddt
 
@@ -1217,18 +1213,17 @@ class FluidState:
             t = self.__t
             b = self.fluid_solver.b
             r = self.fluid_solver.r_spc
+            r1 = self.fluid_solver.r_1
+            r2 = self.fluid_solver.r_2
 
             eta = self.eta
-            eta_r1 = eta - self.fluid_solver.r_1
-            eta_r2 = eta - self.fluid_solver.r_2
-            r1r2 = self.fluid_solver.r1r2
-            r1r2_sqr = self.fluid_solver.r_1 ** 2 + self.fluid_solver.r_2 ** 2 + 3 * self.fluid_solver.r12
 
             a_0 = 2 * r * t / b ** 3
             a_1 = 1 / (eta - 1) ** 3
-            a_2 = (3 * eta ** 2 - eta * r1r2 + r1r2_sqr) / (eta_r1 * eta_r2) ** 3
+            a_2 = (r1 + r2) - 2 * self.eta
+            a_3 = (a_2 ** 2 - self.gamma_v) / self.gamma_v ** 3
 
-            self.__ddpddv = a_0 * (a_1 - a_2 * self.alpha)
+            self.__ddpddv = a_0 * (a_1 - a_3 * self.alpha)
 
         return self.__ddpddv
 
@@ -1342,6 +1337,14 @@ class FluidState:
             self.__eta = self.__v / self.fluid_solver.b
 
         return self.__eta
+
+    @property
+    def gamma_v(self):
+
+        if self.__gamma_v is None:
+            self.__gamma_v = (self.__eta - self.fluid_solver.r_1)*(self.__eta - self.fluid_solver.r_2)
+
+        return self.__gamma_v
 
     # <--------------------------------------------------------------------------------------------------------------> #
     # <--------------------------------------------------------------------------------------------------------------> #

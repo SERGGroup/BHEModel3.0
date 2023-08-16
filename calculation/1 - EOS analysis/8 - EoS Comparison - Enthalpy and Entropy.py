@@ -1,5 +1,5 @@
 # %%-------------------------------------   IMPORT MODULES                      -------------------------------------> #
-from main_classes import VdWEOS, RKEOS, SRKEOS, PREOS
+from main_classes import VdWEOS, RKEOS, SRKEOS, PREOS, convert_cp_coeff
 from main_classes.constant import CALCULATION_DIR
 from REFPROPConnector import ThermodynamicPoint
 import matplotlib.pyplot as plt
@@ -14,7 +14,7 @@ n_points = 200
 t_mods = [0.5, 0.7, 0.9, 1, 2]
 p_rels = np.logspace(-4, 1, n_points)
 
-use_base_cp = True
+use_base_cp = False
 simplify_reading = False
 
 
@@ -25,10 +25,20 @@ acntrs = [0.344, 0.239, 0.011]
 
 if use_base_cp:
 
-    reduced_cp_coeff = True
-    cp0_crits = np.array([[2046.5174407791164, 850.1158291727041, 2084.6170906624607]])
-    cp0_rel = np.array([[0.21270104, 0.79655508]])
-    cps = list(np.dot(cp0_crits.T, cp0_rel))
+    cps = list()
+    #base_coeff = [0.81558724, 0.17805891, 0.01111623]
+    base_coeff = [0.79655508, 0.21270104]
+
+    for fluid in fluids:
+
+        tp = ThermodynamicPoint([fluid], [1], unit_system="MASS BASE SI")
+        tp.set_variable("T", tp.RPHandler.TC)
+        tp.set_variable("P", tp.RPHandler.PC)
+        cp0_crit = tp.get_variable("CP0")
+        t_crit = tp.RPHandler.TC
+
+        coeff = convert_cp_coeff(base_coeff, cp0_crit, t_crit)
+        cps.append(coeff)
 
 else:
 
@@ -44,7 +54,7 @@ else:
 eos_classes = [VdWEOS, RKEOS, SRKEOS, PREOS]
 eos_names = ["VdW eos", "RK eos", "SRK eos", "PR eos"]
 eos_colors = ["tab:blue", "tab:orange", "tab:green", "tab:gray"]
-alphas = [0.35, 1, 1, 1]
+alphas = [0.35, 0.5, 1, 1]
 
 
 # %%-------------------------------------   CALCULATIONS                        -------------------------------------> #
@@ -73,7 +83,7 @@ for fluid in fluids:
 
             t_crit=t_crit, p_crit=p_crit,
             cp_ideal=cps[k], m_molar=m_mols[k],
-            acntr=acntrs[k], reduced_cp_coeff=reduced_cp_coeff
+            acntr=acntrs[k]
 
         )
         crit_states.append(fluid_curr.get_state(t=t_crit, p=p_crit))
