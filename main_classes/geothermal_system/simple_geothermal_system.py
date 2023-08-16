@@ -14,6 +14,7 @@ def calculate_expansion(fluid_eos: CubicEOS, state_in: FluidState, p_out):
 
         state.update_state(p=p_curr, v=v_curr)
         dv = (1 - state.r / state.cp) / state.dpdv
+        # dv = - v_curr / (p_curr * state.gamma)
 
         return [dv]
 
