@@ -1189,7 +1189,7 @@ class FluidState:
             a_1 = (r1 + r2) - 2 * self.eta
             a_3 = self.fluid_solver.r_spc * self.t / b ** 2
 
-            self.__dpdv = (a_1 / self.__gamma_v**2 * self.alpha - a_0) * a_3
+            self.__dpdv = -(a_1 / self.gamma_v**2 * self.alpha + a_0) * a_3
 
         return self.__dpdv
 

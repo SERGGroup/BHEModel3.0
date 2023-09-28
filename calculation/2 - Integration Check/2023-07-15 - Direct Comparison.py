@@ -10,6 +10,9 @@ import pandas as pd
 import numpy as np
 import os
 
+
+# %%-------------------------------------   INIT SOLUTION DICT                  -------------------------------------> #
+
 def new_dict():
 
     return {
@@ -24,6 +27,7 @@ def new_dict():
         "R": list(),
 
     }
+
 
 fluid = "Carbon Dioxide"
 
@@ -99,9 +103,16 @@ tp_in.set_variable("T", tp_in.RPHandler.TC)
 tp_in.set_variable("P", tp_in.RPHandler.PC)
 cp0_crit = tp_in.get_variable("CP0")
 
-# base_coeff = [0.79655508, 0.21270104]
-# coeff = convert_cp_coeff(base_coeff, cp0_crit, tp_in.RPHandler.TC)
-coeff = [4.49897751e+02, 1.66780277e+00, -1.27243808e-03, 3.90820268e-07]
+if fluid == "Carbon Dioxide":
+    coeff = [4.49897751e+02, 1.66780277e+00, -1.27243808e-03, 3.90820268e-07]
+
+elif fluid == "Water":
+    coeff = [1.78959195e+03,  1.06576195e-01,  5.88389412e-04, -1.99830366e-07]
+
+else:
+    base_coeff = [0.79655508, 0.21270104]
+    coeff = convert_cp_coeff(base_coeff, cp0_crit, tp_in.RPHandler.TC)
+
 fluid_eos = PREOS(
 
     t_crit=tp_in.RPHandler.TC, p_crit=tp_in.RPHandler.PC,
