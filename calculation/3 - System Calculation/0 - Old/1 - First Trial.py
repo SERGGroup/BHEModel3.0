@@ -1,6 +1,6 @@
 # %%-------------------------   IMPORT MODULES                      -------------------------------------------------> #
-from main_classes.geothermal_system import evaluate_system, evaluate_surface
-from main_classes.subclasses import SRKEOS, RKEOS
+from main_classes.geothermal_system.simple_geothermal_system import evaluate_system, evaluate_surface
+from main_classes.eos.subclasses import SRKEOS, RKEOS
 
 
 # %%-------------------------   INITIALIZE SYSTEM                   -------------------------------------------------> #

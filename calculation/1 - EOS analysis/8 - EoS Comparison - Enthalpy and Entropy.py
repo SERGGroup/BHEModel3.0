@@ -19,14 +19,31 @@ simplify_reading = False
 
 
 # %%-------------------------------------   INIT CALCULATIONS                   -------------------------------------> #
-fluids = ["Water", "Carbon Dioxide", "Methane"]
-m_mols = [0.01801528, 0.04401, 0.01604]
-acntrs = [0.344, 0.239, 0.011]
+# fluids = ["Water", "Carbon Dioxide", "Methane"]
+# m_mols = [0.01801528, 0.04401, 0.01604]
+# acntrs = [0.344, 0.239, 0.011]
+# cps = [
+#
+#     [1.78959195e+03, 1.06576195e-01, 5.88389412e-04, -1.99830366e-07],
+#     [4.49897751e+02, 1.66780277e+00, -1.27243808e-03, 3.90820268e-07],
+#     [1.20012469e+03, 3.24812968e+00, 7.48129676e-04, - 7.04488778e-07]
+#
+# ]
+
+fluids = ["Carbon Dioxide", "Methane"]
+m_mols = [0.04401, 0.01604]
+acntrs = [0.239, 0.011]
+cps = [
+
+    [4.49897751e+02, 1.66780277e+00, -1.27243808e-03, 3.90820268e-07],
+    [1.20012469e+03, 3.24812968e+00, 7.48129676e-04, - 7.04488778e-07]
+
+]
 
 if use_base_cp:
 
     cps = list()
-    #base_coeff = [0.81558724, 0.17805891, 0.01111623]
+    # base_coeff = [0.81558724, 0.17805891, 0.01111623]
     base_coeff = [0.79655508, 0.21270104]
 
     for fluid in fluids:
@@ -39,17 +56,6 @@ if use_base_cp:
 
         coeff = convert_cp_coeff(base_coeff, cp0_crit, t_crit)
         cps.append(coeff)
-
-else:
-
-    reduced_cp_coeff = False
-    cps = [
-
-        [1.78959195e+03, 1.06576195e-01, 5.88389412e-04, -1.99830366e-07],
-        [4.49897751e+02, 1.66780277e+00, -1.27243808e-03, 3.90820268e-07],
-        [1.20012469e+03, 3.24812968e+00, 7.48129676e-04, - 7.04488778e-07]
-
-    ]
 
 eos_classes = [VdWEOS, RKEOS, SRKEOS, PREOS]
 eos_names = ["VdW eos", "RK eos", "SRK eos", "PR eos"]

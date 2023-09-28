@@ -14,10 +14,14 @@ n_points = 200
 t_mods = [0.5, 0.7, 0.9, 1, 2]
 p_rels = np.logspace(-4, 1, n_points)
 
-fluids = ["Water", "Carbon Dioxide", "Methane"]
-m_mols = [0.01801528, 0.04401, 0.01604]
-acntrs = [0.344, 0.239, 0.011]
-cps = [1864.84159, 845.846, 2230.12]
+# fluids = ["Water", "Carbon Dioxide", "Methane"]
+# m_mols = [0.01801528, 0.04401, 0.01604]
+# acntrs = [0.344, 0.239, 0.011]
+# cps = [1864.84159, 845.846, 2230.12]
+fluids = ["Carbon Dioxide", "Methane"]
+m_mols = [0.04401, 0.01604]
+acntrs = [0.239, 0.011]
+cps = [845.846, 2230.12]
 
 eos_names = ["VdW eos", "RK eos", "SRK eos", "PR eos"]
 eos_colors = ["tab:blue", "tab:orange", "tab:green", "tab:gray"]
@@ -65,10 +69,10 @@ for fluid in fluids:
 
                 v_real = np.nan
 
-            v_rels[0, i] = vdw_fluid.v(t=t_curr, p=p_curr) / vdw_fluid.v_crit
-            v_rels[1, i] = rk_fluid.v(t=t_curr, p=p_curr) / rk_fluid.v_crit
-            v_rels[2, i] = srk_fluid.v(t=t_curr, p=p_curr) / srk_fluid.v_crit
-            v_rels[3, i] = pr_fluid.v(t=t_curr, p=p_curr) / pr_fluid.v_crit
+            v_rels[0, i] = vdw_fluid.v(t=t_curr, p=p_curr) / v_crit_rp
+            v_rels[1, i] = rk_fluid.v(t=t_curr, p=p_curr) / v_crit_rp
+            v_rels[2, i] = srk_fluid.v(t=t_curr, p=p_curr) / v_crit_rp
+            v_rels[3, i] = pr_fluid.v(t=t_curr, p=p_curr) / v_crit_rp
             v_rels[4, i] = v_real / v_crit_rp
 
             pbar.update(1)

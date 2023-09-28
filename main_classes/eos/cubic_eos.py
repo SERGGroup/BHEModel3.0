@@ -696,14 +696,14 @@ class CubicEOS(ABC):
 
         else:
 
-            # If the eos has one real root the method use the xi parameter to understand it the current condition is on
+            # If the eos has one real root the method use the xi parameter to understand if the current condition is on
             # the vapour or on the liquid side of the diagram.
             # (see the documentation for additional information)
             #
             # (NOTE: The error is POSITIVE if the current condition is on the VAPOUR SIDE of the diagram)
 
             v = z_l * self.r_spc * t / p
-            error = -(self.a(t) / (v - self.b) - self.a(self.t_crit) / (self.v_crit - self.b))
+            error = - (self.xi(t, v) - self.xi(self.t_crit, self.v_crit))
 
             return error, z_l, z_v
 
@@ -729,6 +729,10 @@ class CubicEOS(ABC):
 
         f_v = (np.log(v - self.b * self.r_1) - np.log(v - self.b * self.r_2)) / (self.r_1 - self.r_2)
         return z - 1 + alpha * f_v - np.log(z - beta)
+
+    def xi(self, t, v):
+
+        return self.a(t) / (v - self.b)
 
     def cp_ideal(self, t) -> float:
 
@@ -960,6 +964,7 @@ class FluidState:
         self.__h = None
         self.__a = None
         self.__g = None
+        self.__xi = None
 
         # Additional State Variables
         self.__r = None
@@ -1091,6 +1096,15 @@ class FluidState:
     def ex(self, t_ref):
 
         return self.h - t_ref * self.s
+
+    @property
+    def xi(self):
+
+        if self.__xi is None:
+
+            self.__xi = self.fluid_solver.xi(self.__t, self.__v)
+
+        return self.__xi
 
     @property
     def r(self):
