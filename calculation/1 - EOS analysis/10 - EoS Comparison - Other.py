@@ -18,7 +18,7 @@ fluids = ["Water", "Carbon Dioxide", "Methane"]
 m_mols = [0.01801528, 0.04401, 0.01604]
 acntrs = [0.344, 0.239, 0.011]
 cps = [1864.84159, 845.846, 2230.12]
-eos_class = RKEOS
+eos_class = PREOS
 
 
 # %%-------------------------------------   CALCULATIONS                        -------------------------------------> #

@@ -49,10 +49,10 @@ else:
 
     ]
 
-eos_classes = [VdWEOS]  # [VdWEOS, RKEOS, SRKEOS, PREOS]
-eos_names = ["PR eos"]  # ["VdW eos", "RK eos", "SRK eos", "PR eos"]
-eos_colors = ["tab:green"]  # ["tab:blue", "tab:orange", "tab:green", "tab:gray"]
-alphas = [1]    # [0.35, 0.5, 1, 1]
+eos_classes = [RKEOS, SRKEOS, PREOS]
+eos_names = ["RK eos", "SRK eos", "PR eos"]
+eos_colors = ["tab:orange", "tab:green", "tab:gray"]
+alphas = [0.35, 1, 1]
 
 
 # %%-------------------------------------   CALCULATIONS                        -------------------------------------> #
@@ -107,9 +107,7 @@ for fluid in fluids:
             dpdv = - rho_res ** 2 * dpdrho
             gamma = tp.get_variable("gamma")
 
-            # rp_res = (- t_curr * (dpdt ** 2) / dpdv) / tp.get_variable("cp")
-            # rp_res = (tp.get_variable("cp") - tp.get_variable("cv")) / tp.get_variable("cp")
-            rp_res = -dpdv
+            rp_res = (- t_curr * (dpdt ** 2) / dpdv) / tp.get_variable("cp")
 
             if rho_res < 0:
 
@@ -121,27 +119,25 @@ for fluid in fluids:
             for curr_fluid in eos_fluids:
 
                 curr_state = curr_fluid.get_state(p=p_curr, t=t_curr)
-                # res_rels[j + 1, i] = curr_state.r / curr_state.cp
-                res_rels[j + 1, i] = -curr_state.dpdv
+                res_rels[j + 1, i] = curr_state.r / tp.get_variable("cp")
                 j += 1
 
             pbar.update(1)
 
         style = next(styles)
 
-        label_curr = "$t_{{rel}}$ = {}[-]".format(t_mod)
+        lines = list()
         for j in range(len(eos_fluids)):
 
             lines.append(axs[0][k].plot(
 
                 p_rels, res_rels[1 + j, :],
                 linestyle=style, color=eos_colors[j],
-                label=label_curr, alpha=alphas[j]
+                label=eos_names[j], alpha=alphas[j]
 
             )[0])
 
-        # lines.append(axs[0][k].plot(p_rels, res_rels[0, :], label=label_curr, linestyle=style, color="black")[0])
-        axs[0][k].plot(p_rels, res_rels[0, :], label=label_curr, linestyle=style, color="black")
+        lines.append(axs[0][k].plot(p_rels, res_rels[0, :], label="REFPROP", linestyle=style, color="black")[0])
 
     labs = [l.get_label() for l in lines]
 
@@ -153,8 +149,8 @@ for fluid in fluids:
         axs[j][k].legend(lines, labs)
         axs[j][k].set_ylabel(y_labels[j])
         axs[j][k].set_xlabel("$p_{rel}$ [-]")
-        # axs[j][k].set_ylim((0, 1))
-        axs[j][k].set_yscale("log")
+        axs[j][k].set_ylim((0, 1))
+        # axs[j][k].set_yscale("log")
         axs[j][k].grid(visible=True, which="major")
         axs[j][k].grid(visible=True, which="minor", linewidth=0.75, alpha=0.25)
 
