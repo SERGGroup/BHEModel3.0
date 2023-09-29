@@ -1,4 +1,5 @@
-from main_classes.eos.cubic_eos import CubicEOS, FluidState
+from main_classes.support.simple_integrator import SimpleIntegrator
+from main_classes.eos import CubicEOS, FluidState, calculate_flash
 from scipy.integrate import RK45
 import scipy.constants
 
@@ -9,12 +10,10 @@ def calculate_expansion(fluid_eos: CubicEOS, state_in: FluidState, p_out):
 
     def rk_overall_der(z, y):
 
-        p_curr = z
         v_curr = y[0]
 
-        state.update_state(p=p_curr, v=v_curr)
+        state.update_state(t=fluid_eos.t(v=v_curr, p=z), v=v_curr)
         dv = (1 - state.r / state.cp) / state.dpdv
-        # dv = - v_curr / (p_curr * state.gamma)
 
         return [dv]
 
@@ -29,7 +28,7 @@ def calculate_expansion(fluid_eos: CubicEOS, state_in: FluidState, p_out):
             state.update_state(p=p_out, v=v_curr)
             return state
 
-    integrator = RK45(rk_overall_der, state_in.p, [state.v], p_out)
+    integrator = RK45(rk_overall_der, state_in.p, [state_in.v], p_out)
     output = integrator.y
     state.update_state(p=p_out, v=output[0])
 
@@ -123,33 +122,21 @@ def evaluate_system(fluid_eos: CubicEOS, in_state: FluidState, depth_res: float,
     return [in_state, res_in, res_out, sys_out]
 
 
-def evaluate_surface(fluid_eos: CubicEOS, geo_system_points):
+def evaluate_surface(fluid_eos: CubicEOS, geo_system_points, evaluate_with_flash=False):
 
     geo_in = geo_system_points[0]
     geo_out = geo_system_points[-1]
 
-    # Expansion Work Evaluation
-    exp_out = calculate_expansion(fluid_eos, geo_out, geo_in.p)
-    cool_out = calculate_expansion(fluid_eos, geo_in, geo_out.p)
+    if evaluate_with_flash:
 
-    dh_exp_min = cool_out.h - geo_in.h
-    dh_exp_max = geo_out.h - exp_out.h
-    dh_cool_min = exp_out.h - geo_in.h
-    dh_cool_max = geo_out.h - cool_out.h
+        # Expansion Work Evaluation
+        exp_out = calculate_flash(fluid_eos, "PS", geo_in.p, geo_out.s)
+        cool_out = calculate_flash(fluid_eos, "PS", geo_out.p, geo_in.s)
 
-    ds_exp_min = cool_out.s - geo_in.s
-    ds_exp_max = geo_out.s - exp_out.s
-    ds_cool_min = exp_out.s - geo_in.s
-    ds_cool_max = geo_out.s - cool_out.s
+    else:
 
-    ex_exp_min = dh_exp_min - geo_in.t * ds_exp_min
-    ex_exp_max = dh_exp_max - geo_in.t * ds_exp_max
-    ex_cool_min = dh_cool_min - geo_in.t * ds_cool_min
-    ex_cool_max = dh_cool_max - geo_in.t * ds_cool_max
+        # Expansion Work Evaluation
+        exp_out = calculate_expansion(fluid_eos, geo_out, geo_in.p)
+        cool_out = calculate_expansion(fluid_eos, geo_in, geo_out.p)
 
-    return [
-
-        [[dh_exp_min, dh_exp_max], [dh_cool_min, dh_cool_max]],
-        [[ex_exp_min, ex_exp_max], [ex_cool_min, ex_cool_max]]
-
-    ]
+    return [cool_out, exp_out]

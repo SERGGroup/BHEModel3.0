@@ -116,7 +116,7 @@ class CubicEOS(ABC):
         self.r12 = self.r_1 * self.r_2
         self.r1r2 = self.r_1 + self.r_2
 
-    def get_state(self, p=None, t=None, v=None):
+    def get_state(self, p=None, t=None, v=None, sat_states=None):
 
         """
 
@@ -126,8 +126,9 @@ class CubicEOS(ABC):
             :param p: pressure in [Pa]
             :param t: temperature in [K]
             :param v: specific volume in [m^3/kg]
-
-            :return: state class
+            :param sat_states: (optional) saturation states evaluated trough "fluid.get_sat_state()" to speed up the
+            calculations
+            :return:  class
 
         """
 
@@ -141,7 +142,7 @@ class CubicEOS(ABC):
 
         elif (p is not None) and (v is not None):
 
-            return FluidState(self, self.t(v, p), v)
+            return FluidState(self, self.t(v, p, sat_states=sat_states), v)
 
         return FluidState(self)
 
@@ -194,7 +195,7 @@ class CubicEOS(ABC):
 
             return FluidState(self, t_sat, v_sat)
 
-    def p(self, t, v):
+    def p(self, t, v, sat_states=None):
 
         """
 
@@ -202,6 +203,8 @@ class CubicEOS(ABC):
 
             :param t: temperature in [K]
             :param v: specific volume in [m^3/kg]
+            :param sat_states: (optional) saturation states evaluated trough "fluid.get_sat_state()" to speed up the
+            calculations
 
             :return: p: pressure in [Pa]
 
@@ -215,43 +218,35 @@ class CubicEOS(ABC):
                 between the saturation condition. If its so it returns the saturation pressure, otherwise return the 
                 result of the eos. 
                 
-                As the p_sat calculation takes time, if an approximation is available the code uses it in order to 
-                check the likelihood for the specific point to be in the saturation condition. If so, it iterates the 
-                eos to indentify the exact saturation pressure otherwise it simply returns the eos prediction
+                As the p_sat calculation takes time, if an approximation is available or if the user has provided the 
+                saturation states for the selected pressure the code uses it in order to check the likelihood for the 
+                specific point to be in the saturation condition. If so, it iterates the eos to indentify the exact 
+                saturation temperature otherwise it simply returns the eos prediction
                             
             """
+            if (sat_states is not None) and (sat_states[0].t == t):
 
-            # Check for approximate prediction
-            p_sat, z_l, z_v = self.p_sat(t, get_approximate=True)
+                # If the user has provided the saturation states they are used to check whether the system is in a two
+                # phase condition or not. In a bifase condition, the code returns p_sat. Before using it, the code
+                # checks whether the saturation states are the correct ones by checking if the provided temperature
+                # match with the sat_state one.
 
-            if p_sat is None:
-
-                # Approximation are not allowed for the selected eos (None has been returned),
-                # the code iterates p_sat in any condition
-
-                p_sat, z_l, z_v = self.p_sat(t, get_approximate=False)
-                v_liq = z_l * self.r_spc * t / p_sat
-                v_vap = z_v * self.r_spc * t / p_sat
-
-                if v_liq < v < v_vap:
-
+                liq_state, vap_state = sat_states
+                if liq_state.v < v < vap_state.v:
                     # If the provided specific volume lies between the saturation
-                    # condition, the code returns p_sat
+                    # condition, the code returns t_sat
 
-                    return p_sat
+                    return liq_state.p
 
             else:
 
-                # The approximation exists and has
-                # returned the predicted saturation condition
+                # Check for approximate prediction
+                p_sat, z_l, z_v = self.p_sat(t, get_approximate=True)
 
-                v_liq = z_l * self.r_spc * t / p_sat
-                v_vap = z_v * self.r_spc * t / p_sat
+                if p_sat is None:
 
-                if v_liq * 0.98 < v < v_vap * 1.02:
-
-                    # The specific volume is within or near the
-                    # saturation range, p_sat is iterated
+                    # Approximation are not allowed for the selected eos (None has been returned),
+                    # the code iterates p_sat in any condition
 
                     p_sat, z_l, z_v = self.p_sat(t, get_approximate=False)
                     v_liq = z_l * self.r_spc * t / p_sat
@@ -264,6 +259,30 @@ class CubicEOS(ABC):
 
                         return p_sat
 
+                else:
+
+                    # The approximation exists and has
+                    # returned the predicted saturation condition
+
+                    v_liq = z_l * self.r_spc * t / p_sat
+                    v_vap = z_v * self.r_spc * t / p_sat
+
+                    if v_liq * 0.98 < v < v_vap * 1.02:
+
+                        # The specific volume is within or near the
+                        # saturation range, p_sat is iterated
+
+                        p_sat, z_l, z_v = self.p_sat(t, get_approximate=False)
+                        v_liq = z_l * self.r_spc * t / p_sat
+                        v_vap = z_v * self.r_spc * t / p_sat
+
+                        if v_liq < v < v_vap:
+
+                            # If the provided specific volume lies between the saturation
+                            # condition, the code returns p_sat
+
+                            return p_sat
+
         # If the execution has reached this point, it means that
         # the specific volume is outside the saturation range, hence
         # the direct result of the eos is returned
@@ -271,7 +290,7 @@ class CubicEOS(ABC):
         z_l, z_v = self.z(t=t, v=v)
         return z_l * self.r_spc * t / v
 
-    def t(self, v, p):
+    def t(self, v, p, sat_states=None):
 
         """
 
@@ -279,6 +298,8 @@ class CubicEOS(ABC):
 
             :param p: pressure in [Pa]
             :param v: specific volume in [m^3/kg]
+            :param sat_states: (optional) saturation states evaluated trough "fluid.get_sat_state()" to speed up the
+            calculations
 
             :return: t: temperature in [K]
 
@@ -292,43 +313,36 @@ class CubicEOS(ABC):
                 between the saturation condition. If its so it returns the saturation temperature, otherwise return the 
                 result of the eos. 
 
-                As the t_sat calculation takes time, if an approximation is available the code uses it in order to 
-                check the likelihood for the specific point to be in the saturation condition. If so, it iterates the 
-                eos to indentify the exact saturation pressure otherwise it simply returns the eos prediction
+                As the t_sat calculation takes time, if an approximation is available or if the user has provided the 
+                saturation states for the selected pressure the code uses it in order to check the likelihood for the 
+                specific point to be in the saturation condition. If so, it iterates the eos to indentify the exact 
+                saturation pressure otherwise it simply returns the eos prediction
 
             """
 
-            # Check for approximate prediction
-            t_sat, z_l, z_v = self.t_sat(p, get_approximate=True)
+            if (sat_states is not None) and (sat_states[0].p == p):
 
-            if t_sat is None:
+                # If the user has provided the saturation states they are used to check whether the system is in a two
+                # phase condition or not. In a bifase condition, the code returns t_sat. Before using it, the code
+                # checks whether the saturation states are the correct ones by checking if the provided pressure matches
 
-                # Approximation are not allowed for the selected eos (None has been returned),
-                # the code iterates t_sat in any condition
-
-                t_sat, z_l, z_v = self.t_sat(p, get_approximate=False)
-                v_liq = z_l * self.r_spc * t_sat / p
-                v_vap = z_v * self.r_spc * t_sat / p
-
-                if v_liq < v < v_vap:
+                liq_state, vap_state = sat_states
+                if liq_state.v < v < vap_state.v:
 
                     # If the provided specific volume lies between the saturation
                     # condition, the code returns t_sat
 
-                    return t_sat
+                    return liq_state.t
 
             else:
 
-                # The approximation exists and has
-                # returned the predicted saturation condition
+                # Check for approximate prediction
+                t_sat, z_l, z_v = self.t_sat(p, get_approximate=True)
 
-                v_liq = z_l * self.r_spc * t_sat / p
-                v_vap = z_v * self.r_spc * t_sat / p
+                if t_sat is None:
 
-                if v_liq * 0.98 < v < v_vap * 1.02:
-
-                    # The specific volume is within or near the
-                    # saturation range, p_sat is iterated
+                    # Approximation are not allowed for the selected eos (None has been returned),
+                    # the code iterates t_sat in any condition
 
                     t_sat, z_l, z_v = self.t_sat(p, get_approximate=False)
                     v_liq = z_l * self.r_spc * t_sat / p
@@ -340,6 +354,30 @@ class CubicEOS(ABC):
                         # condition, the code returns t_sat
 
                         return t_sat
+
+                else:
+
+                    # The approximation exists and has
+                    # returned the predicted saturation condition
+
+                    v_liq = z_l * self.r_spc * t_sat / p
+                    v_vap = z_v * self.r_spc * t_sat / p
+
+                    if v_liq * 0.98 < v < v_vap * 1.02:
+
+                        # The specific volume is within or near the
+                        # saturation range, p_sat is iterated
+
+                        t_sat, z_l, z_v = self.t_sat(p, get_approximate=False)
+                        v_liq = z_l * self.r_spc * t_sat / p
+                        v_vap = z_v * self.r_spc * t_sat / p
+
+                        if v_liq < v < v_vap:
+
+                            # If the provided specific volume lies between the saturation
+                            # condition, the code returns t_sat
+
+                            return t_sat
 
         # If the execution has reached this point, it means that
         # the specific volume is outside the saturation range, hence
@@ -947,16 +985,16 @@ class CubicEOS(ABC):
 
 class FluidState:
 
-    def __init__(self, fluid_solver: CubicEOS, t=None, v=None):
+    def __init__(self, fluid_solver: CubicEOS, t=None, v=None, sat_states=None):
 
         self.fluid_solver = fluid_solver
 
         self.__t = t
         self.__v = v
 
-        self.__init_parameters()
+        self.__init_parameters(sat_states)
 
-    def __init_parameters(self):
+    def __init_parameters(self, sat_states):
 
         # State Variables
         self.__p = None
@@ -986,7 +1024,7 @@ class FluidState:
         self.__int_rv = None
         self.__int_rtv = None
 
-        self.__init_saturation_condition()
+        self.__init_saturation_condition(sat_states)
 
         # Recurring Parameters
         self.__u = None
@@ -996,7 +1034,7 @@ class FluidState:
         self.__eta = None
         self.__gamma_v = None
 
-    def __init_saturation_condition(self):
+    def __init_saturation_condition(self, sat_states):
 
         self.__x = None
         self.__liquid_state = None
@@ -1004,9 +1042,17 @@ class FluidState:
 
         if self.__t < self.fluid_solver.t_crit:
 
-            p_sat, z_l, z_v = self.fluid_solver.p_sat(self.__t)
-            v_liq = z_l * self.fluid_solver.r_spc * self.__t / p_sat
-            v_vap = z_v * self.fluid_solver.r_spc * self.__t / p_sat
+            if (sat_states is not None) and (sat_states[0].t == self.__t):
+
+                p_sat = sat_states[0].p
+                v_liq = sat_states[0].v
+                v_vap = sat_states[1].v
+
+            else:
+
+                p_sat, z_l, z_v = self.fluid_solver.p_sat(self.__t)
+                v_liq = z_l * self.fluid_solver.r_spc * self.__t / p_sat
+                v_vap = z_v * self.fluid_solver.r_spc * self.__t / p_sat
 
             if v_liq < self.__v < v_vap:
 
@@ -1015,7 +1061,7 @@ class FluidState:
                 self.__liquid_state = FluidState(self.fluid_solver, t=self.__t, v=v_liq)
                 self.__vapour_state = FluidState(self.fluid_solver, t=self.__t, v=v_vap)
 
-    def update_state(self, t=None, v=None, p=None):
+    def update_state(self, t=None, v=None, p=None, sat_states=None):
 
         if (t is not None) and (v is not None):
 
@@ -1024,7 +1070,7 @@ class FluidState:
 
         elif t is None:
 
-            self.__t = self.fluid_solver.t(v, p)
+            self.__t = self.fluid_solver.t(v, p, sat_states=sat_states)
             self.__v = v
 
         else:
@@ -1032,7 +1078,7 @@ class FluidState:
             self.__t = t
             self.__v = self.fluid_solver.v(t, p)
 
-        self.__init_parameters()
+        self.__init_parameters(sat_states)
 
     # <--------------------------------------------------------------------------------------------------------------> #
     # <--------------------------------------------------------------------------------------------------------------> #

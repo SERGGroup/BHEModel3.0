@@ -10,11 +10,11 @@ import os
 
 
 # %%-------------------------------------   CALCULATIONS OPTIONS                -------------------------------------> #
-n_points = 10000
-t_mods = np.logspace(0, 1, 15)
-p_rels = np.logspace(-2, 2, n_points)
+n_points = 20000
+t_mods = np.concatenate((np.logspace(0, 1, 15), np.logspace(-1, 0, 10)[:-1]), axis=None)
+v_rels = np.logspace(-3, 4, n_points)
 
-use_base_cp = False
+use_base_cp = True
 plot_v_rel = True
 
 
@@ -26,7 +26,8 @@ acntrs = [0.011]
 if use_base_cp:
 
     cps = list()
-    base_coeff = [0.81558724, 0.17805891, 0.01111623]
+    # base_coeff = [0.81558724, 0.17805891, 0.01111623]
+    base_coeff = [0.81558724]
 
     for fluid in fluids:
 
@@ -49,13 +50,12 @@ else:
 
 eos_classes = [PREOS]
 eos_names = ["PR eos"]
-eos_colors = ["tab:blue"]
 alphas = [1]
 
 
 # %%-------------------------------------   CALCULATIONS                        -------------------------------------> #
 k = 0
-y_labels = ["R / cp [-]"]
+y_labels = ["$R^{\\dagger}\\ /\\ cp$ [-]"]
 fig, axs = plt.subplots(len(y_labels), 2 * len(fluids), figsize=(6 * 2 * len(fluids), 5 * len(y_labels)), dpi=300)
 pbar = tqdm(desc="Calculating Points", total=n_points * len(t_mods) * len(fluids))
 
@@ -102,53 +102,76 @@ for fluid in fluids:
         t_curr = t_crit * t_mod
         res_rels = np.zeros((len(eos_classes), n_points))
         xi_rels = np.zeros((len(eos_classes), n_points))
-        v_rels = np.zeros((len(eos_classes), n_points))
+        p_rels = np.zeros((len(eos_classes), n_points))
 
-        for i in range(len(p_rels)):
+        for i in range(len(v_rels)):
 
             j = 0
-            p_curr = p_rels[i] * eos_fluids[0].p_crit
+            v_curr = v_rels[i] * (eos_fluids[0].v_crit - eos_fluids[0].b) + eos_fluids[0].b
             for curr_fluid in eos_fluids:
 
-                curr_state = curr_fluid.get_state(p=p_curr, t=t_curr)
-                res_rels[j, i] = curr_state.r / curr_state.cp
+                curr_state = curr_fluid.get_state(v=v_curr, t=t_curr)
                 xi_rels[j, i] = curr_state.xi
-                v_rels[j, i] = curr_state.v
+                p_rels[j, i] = curr_state.p / crit_states[j].p
+
+                if curr_state.bifase:
+                    res_rels[j, i] = np.nan
+
+                else:
+                    res_rels[j, i] = curr_state.r / curr_state.cp
+
                 j += 1
 
             pbar.update(1)
 
-        max_value = np.max(res_rels[0, :])
-        max_i = np.where(res_rels[0, :] == max_value)[0][0]
-        max_xi_ovr.append(np.max(xi_rels))
-        max_r.append(max_value)
-        max_xi.append(xi_rels[0, max_i])
-        max_v.append(v_rels[0, max_i])
-        max_p.append(p_rels[max_i])
-
         style = next(styles)
+
+        if t_mod < 1:
+
+            eos_colors = ["tab:green"]
+
+        else:
+
+            max_value = np.max(res_rels[0, :])
+            max_i = np.where(res_rels[0, :] == max_value)[0][0]
+
+            max_r.append(max_value)
+
+            max_v.append(v_rels[max_i])
+            max_p.append(p_rels[0, max_i])
+            max_xi.append(xi_rels[0, max_i])
+            max_xi_ovr.append(np.max(xi_rels))
+
+            if t_mod == 1:
+
+                eos_colors = ["black"]
+                style = "-"
+
+            else:
+
+                eos_colors = ["tab:blue"]
 
         lines = list()
         for j in range(len(eos_fluids)):
 
+            nan_mask = np.isfinite(res_rels[j, :])
             lines.append(axs[0][2 * k].plot(
 
-                p_rels, res_rels[j, :],
+                p_rels[j, nan_mask], res_rels[j, nan_mask],
                 linestyle=style, color=eos_colors[j],
                 label=eos_names[j], alpha=alphas[j]
 
             )[0])
 
-
             if plot_v_rel:
-                plt_x = v_rels[j, :] / max_v[0]
+                plt_x = v_rels / max_v[0]
 
             else:
                 plt_x = xi_rels[j, :] / max_xi[0]
 
             axs[0][2 * k + 1].plot(
 
-                plt_x, res_rels[j, :],
+                plt_x[nan_mask], res_rels[j, nan_mask],
                 linestyle=style, color=eos_colors[j],
                 label=eos_names[j], alpha=alphas[j]
 
@@ -163,12 +186,13 @@ for fluid in fluids:
         max_p = np.array(max_p)
         max_xi = np.array(max_xi) / max_xi[0]
         max_v = np.array(max_v) / max_v[0]
-        accpt_indxs = np.where(np.array(max_xi_ovr) > max_xi)[0]
+        accpt_indxs = np.where((np.array(max_xi_ovr) > max_xi))[0]
 
         max_xi[0] = 1
-        ax_ins = axs[j][2 * k + 1].inset_axes(
+        axs[j][2 * k].set_xlim((10**-2, 10**5))
+        ax_ins = axs[j][2 * k].inset_axes(
 
-            [0.55, 0.5, 0.42, 0.47],
+            [0.13, 0.55, 0.37, 0.42],
 
         )
 
@@ -177,7 +201,7 @@ for fluid in fluids:
 
         if plot_v_rel:
             axs[j][2 * k + 1].invert_xaxis()
-            axs[j][2 * k + 1].set_xlabel("$v_{rel}$ [-]")
+            axs[j][2 * k + 1].set_xlabel("$(v - b) / (v_{crit} - b)$ [-]")
             axs[j][2 * k + 1].plot(
 
                 max_v[accpt_indxs], max_r[accpt_indxs], "o-",
@@ -217,5 +241,10 @@ plt.show()
 
 
 # %%-------------------------------------   SAVE PLOT                           -------------------------------------> #
-filepath = os.path.join(CALCULATION_DIR, "3 - System Calculation", "output", "r_dag_behaviour.png")
+if use_base_cp:
+    filename = "r_dag_behaviour_fixed_cp.png"
+else:
+    filename = "r_dag_behaviour.png"
+
+filepath = os.path.join(CALCULATION_DIR, "3 - System Calculation", "output", filename)
 fig.savefig(filepath)
