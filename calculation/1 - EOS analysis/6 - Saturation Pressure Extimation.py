@@ -9,7 +9,7 @@ import os
 
 
 # %%-------------------------------------   T_SAT CALCULATIONS                  -------------------------------------> #
-fluid = VdWEOS(
+fluid = RKEOS(
 
     p_crit=1e6,
     t_crit=1e5,

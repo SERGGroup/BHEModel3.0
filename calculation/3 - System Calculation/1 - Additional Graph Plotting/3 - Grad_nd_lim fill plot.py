@@ -4,6 +4,7 @@ from main_classes.constant import CALCULATION_DIR
 from REFPROPConnector import ThermodynamicPoint
 import matplotlib.colors as colors
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from tqdm import tqdm
 import numpy as np
 import os
@@ -263,5 +264,87 @@ plt.show()
 
 # %%-------------------------------------   SAVE PLOT                           -------------------------------------> #
 filename = "grad_lim_behaviour_contour.png"
+filepath = os.path.join(CALCULATION_DIR, "3 - System Calculation", "output", filename)
+fig.savefig(filepath)
+
+
+# %%-------------------------------------   PLOT REGIONS                        -------------------------------------> #
+fig, axs = plt.subplots(1, 2, figsize=(12, 5), dpi=300)
+
+isoline_width = 1
+isoline_alpha = 1
+plot_contour_lines = True
+levels = [np.min(res_tp_mesh), 0.98, 1.2, np.max(res_tp_mesh)]
+isoline_levels = [0.98, 1.2]
+cmap = mpl.colormaps["cividis"]
+norm = colors.Normalize(vmin=0.98, vmax=1.2)
+
+axs[0].contourf(
+
+    p_tp_mesh, t_tp_mesh,
+    res_tp_mesh, levels=levels,
+    zorder=1, norm=norm,
+    cmap=cmap
+
+)
+
+cs = axs[1].contourf(
+
+    v_tv_mesh, t_tv_mesh,
+    res_tv_mesh, levels=levels,
+    zorder=1, norm=norm,
+    cmap=cmap
+
+)
+
+if plot_contour_lines:
+
+    cl_p = axs[0].contour(
+
+        p_tp_mesh, t_tp_mesh, res_tp_mesh,
+        levels=isoline_levels, colors="black",
+        alpha=isoline_alpha, linewidths=isoline_width,
+        zorder=1
+
+    )
+    cl_v = axs[1].contour(
+
+        v_tv_mesh, t_tv_mesh, res_tv_mesh,
+        levels=isoline_levels, colors="black",
+        alpha=isoline_alpha, linewidths=isoline_width,
+        zorder=1
+
+    )
+
+axs[0].plot(p_sat_arr[:, 0], t_rels, color="black", linewidth=2, zorder=2)
+axs[1].plot(v_sat_arr[:-1, 0], t_rels[1:], color="black", linewidth=2, zorder=2)
+axs[1].plot(v_sat_arr[:-1, 1], t_rels[1:], color="black", linewidth=2, zorder=2)
+
+for ax in axs:
+
+    ax.set_xscale("log")
+    ax.set_yscale("log")
+    ax.set_ylabel("$T_{rel}$ [-]")
+
+axs[0].set_xlabel("$p_{rel}$ [-]")
+axs[1].set_xlabel("$(v - b) / (v_{crit} - b)$ [-]")
+axs[0].set_xlim((np.min(p_rels), np.max(p_rels)))
+axs[1].set_xlim((np.min(v_rels), np.max(v_rels)))
+
+props = dict(boxstyle='round', facecolor='white', alpha=1)
+axs[0].text(0.35, 0.75, "A", transform=axs[0].transAxes, fontsize=14, bbox=props)
+axs[0].text(0.75, 0.15, "B", transform=axs[0].transAxes, fontsize=14, bbox=props)
+axs[0].text(0.6, 0.5, "C", transform=axs[0].transAxes, fontsize=14, bbox=props)
+
+axs[1].text(0.75, 0.75, "A", transform=axs[1].transAxes, fontsize=14, bbox=props)
+axs[1].text(0.15, 0.55, "B", transform=axs[1].transAxes, fontsize=14, bbox=props)
+axs[1].text(0.45, 0.5, "C", transform=axs[1].transAxes, fontsize=14, bbox=props)
+
+plt.tight_layout(pad=1)
+plt.show()
+
+
+# %%-------------------------------------   SAVE REGIONS                        -------------------------------------> #
+filename = "regions identification.png"
 filepath = os.path.join(CALCULATION_DIR, "3 - System Calculation", "output", filename)
 fig.savefig(filepath)
