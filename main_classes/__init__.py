@@ -1,2 +1,2 @@
-from .geothermal_system.simple_geothermal_system import evaluate_system, evaluate_surface
+from .geothermal_system import *
 from .eos import RKEOS, PREOS, SRKEOS, VdWEOS, convert_cp_coeff, calculate_flash
