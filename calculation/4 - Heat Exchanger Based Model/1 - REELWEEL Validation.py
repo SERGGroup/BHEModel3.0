@@ -102,7 +102,7 @@ for key in VALIDATION_DICT.keys():
     t_out_list = list()
     m_dot = key / 1.55
 
-    dh_percs, output_points = base_bhe.evaluate_HXG(time_points * 3.154e4, m_dot=key)
+    dh_percs, output_points, drho_down = base_bhe.evaluate_HXG(time_points * 3.154e4, m_dot=key)
 
     i = 0
     for output_point in output_points:

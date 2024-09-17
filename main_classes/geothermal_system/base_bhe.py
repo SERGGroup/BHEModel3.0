@@ -1,5 +1,6 @@
 from REFPROPConnector import ThermodynamicPoint
 from scipy.optimize import minimize
+from typing import Union, List
 import scipy.constants as cst
 from scipy.special import kn
 import numpy as np
@@ -62,9 +63,11 @@ class ReservoirProperties:
 
 
 class BHEGeometry:
+
     depth = 1000  # [m]
     l_horiz = 3000  # [m]
     d_well = 0.15  # [m]
+    n_wells = 1
 
     @property
     def l_tot(self) -> float:
@@ -453,6 +456,7 @@ class isobaricIntegral:
 
         return results
 
+
 class BaseBHE:
 
     def __init__(
@@ -479,6 +483,17 @@ class BaseBHE:
         self.__tmp_point = si_intput.duplicate()
 
         self.integrator = isobaricIntegral([si_intput, si_intput])
+
+    @property
+    def ideal_exergy_efficiency(self) -> float:
+
+        dh = self.__ideal_points[-1].get_variable("H") - self.__ideal_points[0].get_variable("H")
+        ds = self.__ideal_points[-1].get_variable("S") - self.__ideal_points[0].get_variable("S")
+
+        t_0 =  self.__ideal_points[0].get_variable("T")
+        t_rocks = t_0 + self.res_prop.grad * self.geom.depth
+        dex_rocks = dh * (1 - t_0 / t_rocks)
+        return (dh - t_0 * ds) / dex_rocks
 
     @property
     def input_point(self) -> ThermodynamicPoint:
@@ -535,33 +550,161 @@ class BaseBHE:
 
         self.integrator.limiting_points = [self.__ideal_points[1], self.__ideal_points[2]]
 
-    def evaluate_HXG(self, times: [float], m_dot: float):
+    def evaluate_HXG(self, times: Union[float, List[float], np.ndarray], m_dot: Union[float, List[float], np.ndarray]) -> dict:
+
+        times, m_dot = np.meshgrid(np.array(times), np.array(m_dot))
 
         dh_max = self.integrator.dh_max
         UdAs = 1 / self.res_prop.evaluate_rel_resistance(times=times, d=self.geom.d_well) * np.pi * self.geom.d_well
-        UAs = UdAs * self.geom.l_horiz / (m_dot * dh_max)
+        UAs = UdAs / dh_max * (self.geom.l_horiz * self.geom.n_wells / m_dot)
         dh_percs = self.integrator.identify_solutions(UAs)
-        dh_vert = cst.g * self.geom.depth
 
-        output_points = list()
-        drho_down = list()
-        for dh_perc in dh_percs:
+        dhs = dh_percs * dh_max
+        original_shape = dhs.shape
+        dhs_flat = dhs.flatten()
 
-            self.__real_points[0].set_variable("H", self.__ideal_points[1].get_variable("H") + dh_perc * dh_max)
+        ds_flat = np.empty(dhs_flat.shape)
+        dex_flat = np.empty(dhs_flat.shape)
+
+        p_down_flat = np.empty(dhs_flat.shape)
+        h_down_flat = np.empty(dhs_flat.shape)
+        drho_flat = np.empty(dhs_flat.shape)
+        t_down_flat = np.empty(dhs_flat.shape)
+
+        ds_flat[:] = np.nan
+        dex_flat[:] = np.nan
+        p_down_flat[:] = np.nan
+        h_down_flat[:] = np.nan
+        drho_flat[:] = np.nan
+        t_down_flat[:] = np.nan
+
+        for i in range(len(dhs_flat)):
+
+            self.__real_points[0].set_variable("H", self.__ideal_points[1].get_variable("H") + dhs_flat[i])
             self.__real_points[0].set_variable("P", self.__ideal_points[1].get_variable("P"))
 
-            self.__real_points[1].set_variable("H", self.__real_points[0].get_variable("H") - dh_vert)
-            self.__real_points[1].set_variable("S", self.__real_points[0].get_variable("S"))
-
-            output_points.append(self.__real_points[1].get_alternative_unit_system(self.__user_unit_system))
-            drho_down.append(self.__real_points[0].get_variable("rho") - self.__ideal_points[1].get_variable("rho"))
-            dh = dh_perc * dh_max
             ds = self.__real_points[0].get_variable("S") - self.__ideal_points[1].get_variable("S")
 
-            self.w_out = m_dot * dh
-            self.ex_out = m_dot * (dh - self.__ideal_points[0].get_variable("T") * ds)
+            if ds > 0:
+                ds_flat[i] = self.__real_points[0].get_variable("S") - self.__ideal_points[1].get_variable("S")
+                dex_flat[i] = dhs_flat[i] - self.__ideal_points[0].get_variable("T") * ds_flat[i]
+                drho_flat[i] = self.__ideal_points[1].get_variable("rho") - self.__real_points[0].get_variable("rho")
 
-        return dh_percs, output_points, drho_down
+                t_down_flat[i] = self.__real_points[0].get_variable("T")
+                p_down_flat[i] = self.__real_points[0].get_variable("P")
+                h_down_flat[i] = self.__real_points[0].get_variable("H")
+
+        return {
+
+            "time": times,
+            "m_dot": m_dot,
+            "dh_perc": dh_percs,
+            "dh": dhs,
+            "ds": ds_flat.reshape(original_shape),
+            "dex": dex_flat.reshape(original_shape),
+            "drho": drho_flat.reshape(original_shape),
+            "T_down": t_down_flat.reshape(original_shape),
+            "P_down": p_down_flat.reshape(original_shape),
+            "H_down": h_down_flat.reshape(original_shape),
+
+        }
+
+    def evaluate_surface_condition(self, HXG_result: dict, indices: Union[List[int], np.ndarray] = None) -> dict:
+
+        p_downs = HXG_result["P_down"]
+        h_downs = HXG_result["H_down"]
+        original_shape = p_downs.shape
+
+        p_flat = p_downs.flatten()
+        h_flat = h_downs.flatten()
+
+        p_out_flat = np.empty(p_flat.shape)
+        t_out_flat = np.empty(p_flat.shape)
+        dp_flat = np.empty(p_flat.shape)
+        dt_flat = np.empty(p_flat.shape)
+
+        p_out_flat[:] = np.nan
+        t_out_flat[:] = np.nan
+        dp_flat[:] = np.nan
+        dt_flat[:] = np.nan
+
+        dh_vert = cst.g * self.geom.depth
+
+        if indices is None:
+            indices = range(len(p_flat))
+
+        for i in indices:
+
+            if not np.isnan(p_flat[i]):
+
+                self.__real_points[0].set_variable("P", p_flat[i])
+                self.__real_points[0].set_variable("H", h_flat[i])
+
+                self.__real_points[1].set_variable("H", self.__real_points[0].get_variable("H") - dh_vert)
+                self.__real_points[1].set_variable("S", self.__real_points[0].get_variable("S"))
+
+                p_out = self.__real_points[1].get_variable("P")
+                t_out = self.__real_points[1].get_variable("T")
+                rho_out = self.__real_points[1].get_variable("rho")
+
+                if t_out > 0 and p_out > 0 and rho_out > 0:
+
+                    p_out_flat[i] = self.__real_points[1].get_variable("P")
+                    t_out_flat[i] = self.__real_points[1].get_variable("T")
+                    dp_flat[i] = self.__real_points[1].get_variable("T") - self.__ideal_points[0].get_variable("T")
+                    dp_flat[i] = self.__real_points[1].get_variable("T") - self.__ideal_points[0].get_variable("T")
+
+        HXG_result.update({
+
+            "p_out": p_out_flat.reshape(original_shape),
+            "T_out": t_out_flat.reshape(original_shape),
+            "dt_overall": dt_flat.reshape(original_shape),
+            "dp_overall": dp_flat.reshape(original_shape),
+
+        })
+
+        return HXG_result
+
+    def evaluate_direct_expansion(self, surface_result: dict, indices: Union[List[int], np.ndarray] = None) -> dict:
+
+        p_surfs = surface_result["p_out"]
+        h_surfs = surface_result["T_out"]
+        original_shape = p_surfs.shape
+
+        p_flat = p_surfs.flatten()
+        h_flat = h_surfs.flatten()
+
+        dh_turb_flat = np.empty(p_flat.shape)
+        dh_cool_flat = np.empty(p_flat.shape)
+
+        dh_turb_flat[:] = np.nan
+        dh_cool_flat[:] = np.nan
+
+        if indices is None:
+            indices = range(len(p_flat))
+
+        for i in indices:
+
+            if not np.isnan(p_flat[i]):
+
+                self.__real_points[1].set_variable("P", p_flat[i])
+                self.__real_points[1].set_variable("H", h_flat[i])
+
+                self.__tmp_point.set_variable("P", self.__ideal_points[0].get_variable("P"))
+                self.__tmp_point.set_variable("S", self.__real_points[1].get_variable("S"))
+
+                dh_turb_flat[i] = self.__real_points[1].get_variable("H") - self.__tmp_point.get_variable("H")
+                dh_cool_flat[i] = self.__tmp_point.get_variable("H") - self.__ideal_points[0].get_variable("H")
+
+        surface_result.update({
+
+            "dh_turb": dh_turb_flat.reshape(original_shape),
+            "dh_cool": dh_cool_flat.reshape(original_shape)}
+
+        )
+
+        return surface_result
+
 
 class economicEvaluator:
 

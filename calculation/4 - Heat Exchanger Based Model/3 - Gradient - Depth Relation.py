@@ -9,12 +9,13 @@ from tqdm import tqdm
 # %%-------------------------------------   INIT CALCULATION                        ---------------------------------> #
 m_dot = 1
 t_in = 10           # [°C]
-depth = 500         # [m]
+depth = 3000         # [m]
 l_horiz = 3500      # [m]
-other_fluid = "Ethane"
+main_fluid = "Carbon Dioxide"
+other_fluid = "Propane"
 times = np.array([1 / 365, 10])
 
-mix_conc = np.array([0, 0.01, 0.1, 1])
+mix_conc = np.array([0, 0.1, 0.25, 0.5, 0.75, 1])
 gradients = np.linspace(25, 75, 20) / 1e3
 
 mix_conc, gradients = np.meshgrid(mix_conc, gradients)
@@ -29,7 +30,7 @@ for i in range(mix_conc.shape[0]):
     for j in range(mix_conc.shape[1]):
 
         conc = mix_conc[i, j]
-        bhe_in_mix = ThermodynamicPoint(["CarbonDioxide", other_fluid], [1 - conc, conc], unit_system="MASS BASE SI")
+        bhe_in_mix = ThermodynamicPoint([main_fluid, other_fluid], [1 - conc, conc], unit_system="MASS BASE SI")
         bhe_in_mix.set_variable("T", t_in + 273.15)
         bhe_in_mix.set_variable("Q", 0)
         p_ins[i, j] = bhe_in_mix.get_variable("P")
@@ -77,11 +78,11 @@ dPs = dPs - p_ins
 betas = dPs / p_ins + 1
 dPs_MPA = dPs / 1e6
 
-for j in [0, 2]:
+for j in [0, 1, 2, 3, 4]:
 
     plt.plot(
 
-        gradients[:, j]*1e3, dPs_MPA[:, j],
+        gradients[:, j]*1e3, betas[:, j],
         label="{}={}$\%_{{mass}}$".format(
 
             other_fluid,
@@ -93,9 +94,10 @@ for j in [0, 2]:
 
 plt.legend()
 plt.xlabel("Gradient (°C/km)")
-plt.ylabel("dP (MPa)")
+plt.ylabel("Beta (-)")
 plt.title("$CO_2$ - {} Mixture".format(other_fluid))
 plt.show()
+
 
 # %%-------------------------------------   PLOT INTEGRAL PROFILE               -------------------------------------> #
 base_bhes = [
