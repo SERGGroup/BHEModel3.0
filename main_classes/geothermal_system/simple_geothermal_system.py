@@ -44,7 +44,7 @@ def calculate_vertical(fluid_eos: CubicEOS, state_in: FluidState, res_depth: flo
         p_curr = y[0]
         v_curr = y[1]
 
-        state.update_state(t=fluid_eos.t(v=v_curr, p=p_curr), v=v_curr)
+        state.update_state(p=p_curr, v=v_curr)
 
         dp = - scipy.constants.g / v_curr
         dv = (1 - state.r / state.cp) / state.dpdv * dp

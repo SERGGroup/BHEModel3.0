@@ -5,9 +5,10 @@ from main_classes import RKEOS, evaluate_system, evaluate_surface
 # %%-------------------------------------   CALCULATIONS                        -------------------------------------> #
 fluid = RKEOS()
 
-depth = 4000.
-grad_rocks = 50 / 1000
-in_state = fluid.get_state(t=1.2*fluid.t_crit, v=fluid.v_crit*1.1)
+depth = 345.50
+grad_rocks = 0.011
+v_in = 0.01 * (fluid.v_crit - fluid.b) + fluid.b
+in_state = fluid.get_state(t=0.9*fluid.t_crit, v=v_in)
 
 t_in = in_state.t
 t_rocks = t_in + depth * grad_rocks

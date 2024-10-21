@@ -1,6 +1,5 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
 from matplotlib.colors import LinearSegmentedColormap, TwoSlopeNorm
-
 from main_classes import BaseBHE, ReservoirProperties, BHEGeometry
 from REFPROPConnector import ThermodynamicPoint
 import matplotlib.pyplot as plt

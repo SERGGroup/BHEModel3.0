@@ -7,13 +7,15 @@ import numpy as np
 
 
 # %%-------------------------------------   INIT ARRAYS                         -------------------------------------> #
-n_grad = 100
-n_t_rel = 10
+n_grad = 5
+n_depth = 5
+n_t_rel = 3
 
-grad_nd_list = np.logspace(0, 2, n_grad)[1:]
-dz_nd_list = [10 ** -2, 10 ** -1.5, 10 ** -1, 10 ** -0.5, 1]
-t_rel_list = np.logspace(np.log10(0.2), 1, n_t_rel)
-grad_nd, dz_nd = np.meshgrid(grad_nd_list, dz_nd_list)
+grad_nd_list = np.logspace(0, 2, n_grad + 1)[1:]
+dz_nd_list = np.logspace(-2, 0, n_depth)
+t_rel_list = np.logspace(np.log10(0.5), np.log10(5), n_t_rel)
+
+grad_nd, dz_nd = np.meshgrid(grad_nd_list, dz_nd_list, indexing="ij")
 
 base_shape = np.array(grad_nd.shape)
 res_shape = np.append([len(t_rel_list)], base_shape)
@@ -42,7 +44,7 @@ w_dex_maxs[:] = np.nan
 # %%-------------------------------------   CALCULATE                           -------------------------------------> #
 
 fluid = RKEOS()
-v_rel_curr = 10**-3
+v_rel_curr = 10**-2
 v_in = v_rel_curr * (fluid.v_crit - fluid.b) + fluid.b
 
 pbar = tqdm(desc="Calculating Points", total=len(t_rel_list) * len(grad_nd_list) * len(dz_nd_list))
@@ -51,7 +53,7 @@ for i in range(len(t_rel_list)):
 
     t_rel = t_rel_list[i]
 
-    in_state = fluid.get_state(t=t_rel * fluid.t_crit, v=fluid.v_crit * v_rel_curr)
+    in_state = fluid.get_state(t=t_rel * fluid.t_crit, v=v_in)
     t_in = in_state.t
 
     grad_rocks[i, :, :] = grad_nd * scipy.constants.g / in_state.cp
@@ -62,25 +64,19 @@ for i in range(len(t_rel_list)):
 
         for k in range(len(dz_nd_list)):
 
-            try:
+            states = evaluate_system(fluid, in_state, depth[i, j, k], t_rocks[i, j, k])
+            surface_states = evaluate_surface(fluid, states, evaluate_with_flash=False)
 
-                states = evaluate_system(fluid, in_state, depth[i, j, k], t_rocks[i, j, k])
-                surface_states = evaluate_surface(fluid, states, evaluate_with_flash=False)
+            w_dot = (states[3].h - states[0].h)
+            ex_dot = w_dot - states[0].t * (states[3].s - states[0].s)
+            cf = 1 - t_in / t_rocks[i, j, k]
 
-                w_dot = (states[3].h - states[0].h)
-                ex_dot = w_dot - states[0].t * (states[3].s - states[0].s)
-                cf = 1 - t_in / t_rocks
+            w_dot_nds[i, j, k] = w_dot / (states[0].cp * states[0].t)
+            ex_dot_nds[i, j, k] = ex_dot / (states[0].cp * states[0].t)
+            eta_exs[i, j, k] = ex_dot / (w_dot * cf)
 
-                w_dot_nds[i, j, k] = w_dot / (states[0].cp * states[0].t)
-                ex_dot_nds[i, j, k] = ex_dot / (states[0].cp * states[0].t)
-                eta_exs[i, j, k] = ex_dot / (w_dot * cf)
-
-                w_dex_mins[i, j, k] = (surface_states[0].h - states[0].h) / w_dot
-                w_dex_maxs[i, j, k] = (states[3].h - surface_states[1].h) / w_dot
-
-            except:
-
-                pass
+            w_dex_mins[i, j, k] = (surface_states[0].h - states[0].h) / w_dot
+            w_dex_maxs[i, j, k] = (states[3].h - surface_states[1].h) / w_dot
 
             pbar.update(1)
 
