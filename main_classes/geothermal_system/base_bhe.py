@@ -506,7 +506,7 @@ class BaseBHE:
         self.__ideal_points[0] = input_point.get_alternative_unit_system("MASS BASE SI")
 
     @property
-    def ideal_points(self) -> list[ThermodynamicPoint]:
+    def ideal_points(self) -> List[ThermodynamicPoint]:
 
         return_list = list()
         for ideal_point in self.__ideal_points:
@@ -515,7 +515,7 @@ class BaseBHE:
         return return_list
 
     @property
-    def real_points(self) -> list[ThermodynamicPoint]:
+    def real_points(self) -> List[ThermodynamicPoint]:
 
         return_list = [
 

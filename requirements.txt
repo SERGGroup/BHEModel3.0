@@ -3,3 +3,6 @@ numpy
 tqdm
 scipy
 pandas
+arviz
+pymc
+openpyxl

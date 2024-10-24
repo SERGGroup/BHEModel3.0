@@ -13,7 +13,7 @@ import numpy as np
 t_in = 10                   # [°C]
 time = 20                   # [year]
 s_year = 365 * 24 * 3600    # [s / year]
-flow_rates_ovr = np.linspace(0, 300, 401)[1:]
+flow_rates_ovr = np.linspace(0, 300, 1001)[1:]
 depths = np.linspace(2000, 5000, 50)    # [m]
 grads = np.linspace(10, 50, 50) / 1e3   # [°C/m]
 depths, grads = np.meshgrid(depths, grads, indexing='ij')
@@ -143,19 +143,43 @@ plt.show()
 fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
 
 delta_hs = dhs[:, :, 0] * m_dot_opts[:, :, 0] - dhs[:, :, 1] * m_dot_opts[:, :, 1]
-cont1 = ax1.contourf(grads * 1e3, depths / 1e3, delta_hs / 1e3)
-ax1.set_title("Energy Output Difference (kW)")
+cont1 = ax1.contourf(grads * 1e3, depths / 1e3, delta_hs / 1e3, levels=100)
+ax1.set_title("Energy Output (kW)")
 fig.colorbar(cont1, ax=ax1)
 ax1.set_xlabel("Gradient (°C/km)")
 ax1.set_ylabel("Depth (km)")
 
 delta_exs = dexs[:, :, 0] * m_dot_opts[:, :, 0] - dexs[:, :, 1] * m_dot_opts[:, :, 1]
-cont2 = ax2.contourf(grads * 1e3, depths / 1e3, delta_exs / 1e3)
-ax2.set_title("Exergy Output Difference (kW)")
+cont2 = ax2.contourf(grads * 1e3, depths / 1e3, delta_exs / 1e3, levels=100)
+ax2.set_title("Exergy Output (kW)")
 fig.colorbar(cont2, ax=ax2)
 ax2.set_xlabel("Gradient (°C/km)")
 ax2.set_ylabel("Depth (km)")
 
-fig.suptitle("Comparison Between CO2 and Water (kW)", fontsize=14)
+fig.suptitle("Difference Between CO2 and Water", fontsize=14)
+plt.tight_layout(pad=1)
+plt.show()
+
+
+# %%------------   PLOT RELATIVE COMPARISON                             ---------------------------------------------> #
+fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 5))
+
+delta_hs = (dhs[:, :, 0] * m_dot_opts[:, :, 0] - dhs[:, :, 1] * m_dot_opts[:, :, 1]) / (dhs[:, :, 1] * m_dot_opts[:, :, 1])
+hs_levels = np.linspace(-25, 0, 300)
+cont1 = ax1.contourf(grads * 1e3, depths / 1e3, delta_hs * 1e2, levels=hs_levels, extend='both')
+ax1.set_title("Energy Output (%)")
+fig.colorbar(cont1, ax=ax1)
+ax1.set_xlabel("Gradient (°C/km)")
+ax1.set_ylabel("Depth (km)")
+
+delta_exs = (dexs[:, :, 0] * m_dot_opts[:, :, 0] - dexs[:, :, 1] * m_dot_opts[:, :, 1]) / (dexs[:, :, 1] * m_dot_opts[:, :, 1])
+exs_levels = np.linspace(0, 22, 100)
+cont2 = ax2.contourf(grads * 1e3, depths / 1e3, delta_exs * 1e2, levels=exs_levels, extend='both')
+ax2.set_title("Exergy Output (%)")
+fig.colorbar(cont2, ax=ax2)
+ax2.set_xlabel("Gradient (°C/km)")
+ax2.set_ylabel("Depth (km)")
+
+fig.suptitle("Relative Difference Between CO2 and Water", fontsize=14)
 plt.tight_layout(pad=1)
 plt.show()

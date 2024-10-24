@@ -102,7 +102,7 @@ inv_res = base_res[::-1]
 
 data = pd.read_csv(
 
-    '/Users/PietroUngar/PycharmProjects/BHEModel3.0/calculation/6 - Convolution/Zhang et Al. (2011).csv',
+    'C:\\Users\\Utente\\PycharmProjects\\BHEModel3.0\\calculation\\6 - Convolution\\Zhang et Al. (2011).csv',
     header=1
 
 )
@@ -156,7 +156,6 @@ plt.show()
 labels = ["No HE", "No Convolution", "Simplified Convolution", "Convolution"]
 
 for i, curr_label in enumerate(labels):
-
     plt.plot(times, q_net[:, i] - q_in, label=curr_label)
 
 plt.xlim((100, max(times)))
