@@ -38,7 +38,7 @@ class ReservoirProperties:
         self.grad = grad_km / 1E3
 
     def evaluate_rel_resistance(self, times: [float], d: float) -> [float]:
-
+        """Result in [1 / (W / (m^2 K))]"""
         times_nd = self.get_nd_times(times, d)
         f = self.evaluate_f(times_nd)
         return d / (2 * self.k_rock * f)
@@ -193,6 +193,8 @@ class isobaricIntegral:
             return self.__identify_numerical_solution(UAs)
 
     def evaluate_integral(self, dh: [float]) -> [float]:
+
+        """Results in [1/K]"""
 
         if self.__solve_analytically:
 
@@ -706,16 +708,13 @@ class BaseBHE:
         return surface_result
 
 
-class economicEvaluator:
+class baseEconomicEvaluator:
 
-    Le = 20
-    i_rate = 0.04
-    om_ratio = 0.05
-    hy = 8000
-    c_el = 0.075
-
-    def __init__(self, thermo_evaluator: BaseBHE):
-        self.thermo = thermo_evaluator
+    Le = 20             # [year]
+    i_rate = 0.04       # [%/year]
+    om_ratio = 0.05     # [%/year]
+    hy = 8000           # [h/year]
+    c_el = 0.115        # [€/kWh]
 
     @property
     def alpha(self):
@@ -725,28 +724,50 @@ class economicEvaluator:
     def beta(self):
         return (1 + self.alpha * self.om_ratio) / (self.alpha * self.hy)
 
+    def LCOx(
+
+            self, useful_effects: Union[float, np.ndarray], l_overall: float, d_well: float,
+            other_costs: float = 0., w_net_el: float = 0.
+
+    ) -> Union[float, np.ndarray]:
+
+        """Result in [€/kWh], w_net_el in [kW], other_costs in [€], l_overall and d_well in [m]"""
+
+        c_well = 1.15 * 1.05 * 2.86 * (0.105 * l_overall ** 2 + 1776 * l_overall * d_well + 2.735E5)
+        result_list = ((c_well + other_costs) * self.beta + w_net_el * self.c_el) / useful_effects
+
+        return result_list
+
+
+class economicEvaluator(baseEconomicEvaluator):
+
+    def __init__(self, thermo_evaluator: BaseBHE):
+        self.thermo = thermo_evaluator
+
     def evaluate_LCOx(self, xs: [str], len_hor: float, m_dot: float) -> [float]:
 
         # self.thermo.set_HX_condition()
         self.thermo.geom.l_horiz = len_hor
-
-        l_overall = self.thermo.geom.l_tot
-        d_well = self.thermo.geom.d_well
-        c_well = 1.15 * 1.05 * 2.86 * (0.105 * l_overall ** 2 + 1776 * l_overall * d_well + 2.735E5)
         self.thermo.evaluate_HXG([10 * 3.154e+7], m_dot=m_dot)
 
-        result_list = list()
+        attr_list = list()
         for x in xs:
 
             if hasattr(self.thermo, x):
 
-                result_list.append((c_well * self.beta) / getattr(self.thermo, x))
+                attr_list.append(getattr(self.thermo, x))
 
             else:
 
-                result_list.append(np.nan)
+                attr_list.append(np.nan)
 
-        return result_list
+        return self.LCOx(
+
+            useful_effects=np.array(attr_list),
+            l_overall= self.thermo.geom.l_tot,
+            d_well=self.thermo.geom.d_well
+
+        )
 
     def optimize_LOCx(self, xs: str) -> [float]:
 
