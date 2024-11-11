@@ -245,7 +245,7 @@ contour_lines = axs[0].contour(
 plt.clabel(
 
     contour_lines, inline=True,
-    fontsize=10, fmt=lambda x: f"{np.exp(x) * 100:.1f} €/kWh",
+    fontsize=10, fmt=lambda x: f"{np.exp(x) * 100:.1f} c€/kWh",
     use_clabeltext=True
 
 )
@@ -290,4 +290,3 @@ plt.tight_layout(pad=1)
 image_path = os.path.join(CURRENT_DIR, "0 - Output Plots", "Water (Base) - Optimal LCOH.png")
 plt.savefig(image_path, dpi=300)
 
-plt.show()

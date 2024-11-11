@@ -16,7 +16,7 @@ import os
 
 # %%------------   IMPORT RESULTS                         -----------------------------------------------------------> #
 CURRENT_DIR = os.path.join(ARTICLE_CALCULATION_DIR, "2024-10-22 - SDEWES Article")
-file_path = os.path.join(CURRENT_DIR, "0 - Results", "CO2 - V1.0 (Base).xlsx")
+file_path = os.path.join(CURRENT_DIR, "0 - Results", "CO2 - V2.0 (Base).xlsx")
 
 workbook = load_workbook(filename=file_path)
 
@@ -48,9 +48,8 @@ q_tot = 1000                        # [kW]
 depth_list = np.unique(data_dict['depth'])
 grad_list = np.unique(data_dict['grad'])
 h_rel_list = np.unique(data_dict['h_rel'])
-t_sat_list = np.unique(data_dict['T_sat'])
 
-curr_depth = depth_list[7]
+curr_depth = depth_list[0]
 curr_grad = grad_list[7]
 
 curr_indices = np.where(np.logical_and.reduce((
@@ -154,7 +153,7 @@ pbar.close()
 
 
 # %%------------   PLOT LCOH                              -----------------------------------------------------------> #
-plt.contourf(t_sat_fine, 1 - h_rel_fine, (lcoh_fine))
+plt.contourf(t_sat_fine, 1 - h_rel_fine, (l_horiz_fine))
 plt.plot(optimal_t_sat, 1-optimal_h_rel, marker='*', markersize=15, color='#FFD700')
 plt.yscale("log")
 plt.colorbar()
