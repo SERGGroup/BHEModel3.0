@@ -16,24 +16,26 @@ import os
 
 
 # %%------------   GENERATE CALCULATION POINTS            -----------------------------------------------------------> #
-n_points = 15
+n_points = 5
 
 depth_list = np.round(np.linspace(1000, 5000, n_points), 1)
 grad_list = np.round(np.linspace(30, 100, n_points), 1) / 1000
-dt_HE = np.logspace(-1, 1, n_points)
+h_rel = 1 - np.logspace(-3, -0.25, n_points)
+t_sat = np.linspace(10, 25, n_points)
 
-depth_list, grad_list, dt_HE = np.meshgrid(depth_list, grad_list, dt_HE, indexing='ij')
+depth_list, grad_list, h_rel, t_sat = np.meshgrid(depth_list, grad_list, h_rel, t_sat, indexing='ij')
 
 depth_list = np.ravel(depth_list)
 grad_list = np.ravel(grad_list)
-dt_HE = np.ravel(dt_HE)
+h_rel = np.ravel(h_rel)
+t_sat = np.ravel(t_sat)
 
-table = np.stack((depth_list, grad_list, dt_HE)).T
+table = np.stack((depth_list, grad_list, h_rel, t_sat)).T
 
 
 # %%------------   IMPORT RESULTS                         -----------------------------------------------------------> #
 CURRENT_DIR = os.path.join(ARTICLE_CALCULATION_DIR, "2024-10-22 - SDEWES Article")
-file_path = os.path.join(CURRENT_DIR, "0 - Results", "Water (Base).xlsx")
+file_path = os.path.join(CURRENT_DIR, "0 - Results", "CO2 (Base).xlsx")
 
 workbook = load_workbook(filename=file_path)
 
@@ -61,7 +63,6 @@ workbook.close()
 d_well = 0.15                       # [m]
 time = 10 * (365 * 24 * 60 * 60)    # [years] to [s]
 q_tot = 1000                        # [kW]
-m_dot = 5.971                       # [kg/s]
 
 depth_list = np.unique(data_dict['depth'])
 grad_list = np.unique(data_dict['grad'])
@@ -74,7 +75,7 @@ economic_evaluator = baseEconomicEvaluator()
 economic_evaluator.Le = 20
 
 integrator = isobaricIntegral([input_point, output_point])
-integrator.solve_analytically = False
+integrator.solve_analytically = True
 
 new_shape = data_dict[headers[0]].shape
 final_results = {header: np.empty(new_shape) for header in headers}
@@ -172,7 +173,7 @@ nan_mask = np.where(
     np.logical_and.reduce((
 
         np.logical_not(np.isnan(optimal_results['LCOH'])),
-        optimal_results['depth'] > 1600,
+        optimal_results['depth'] > 1750,
 
     ))
 )

@@ -1,4 +1,5 @@
 from REFPROPConnector import ThermodynamicPoint
+from scipy.interpolate import interp1d
 from scipy.optimize import minimize
 from typing import Union, List
 import scipy.constants as cst
@@ -85,6 +86,7 @@ class isobaricIntegral:
 
         self.__solve_analytically = False
         self.__n_int_num = 20
+        self.__q_interpolation = None
 
         self.__delta = 0.0
         self.__dh_max = 0.0
@@ -347,7 +349,7 @@ class isobaricIntegral:
 
     def __init_h_rels(self, p_0, h_0, dh_max) -> [float]:
 
-        h_rels = 1 - np.logspace(-3, 0, self.n_int_num)
+        h_rels = 1 - np.logspace(-5, 0, self.n_int_num)
 
         # --------------------------- CHECK SATURATION ----------------------------------------------------------
         # If needed, add the two saturation condition (and remove two-phase conditions for single component flow)
@@ -420,10 +422,15 @@ class isobaricIntegral:
 
         self.__dh_max = dh_max
         self.__int_params = [h_rels, dTs, integral]
+        self.__q_interpolation = interp1d(np.log(1 - h_rels[:-1]), integral[:-1], kind='linear')
 
     def __evaluate_numerical_integral(self, dh: [float]) -> [float]:
 
-        pass
+        if self.__q_interpolation is None:
+
+            self.__prepare_numeric_integral_param()
+
+        return self.__q_interpolation(np.log(1 - dh))
 
     def __identify_numerical_solution(self, UAs: [float]) -> [float]:
 
@@ -729,14 +736,14 @@ class baseEconomicEvaluator:
             self, useful_effects: Union[float, np.ndarray], l_overall: float, d_well: float,
             other_costs: float = 0., w_net_el: float = 0.
 
-    ) -> Union[float, np.ndarray]:
+    ) -> [Union[float, np.ndarray], float]:
 
         """Result in [€/kWh], w_net_el in [kW], other_costs in [€], l_overall and d_well in [m]"""
 
         c_well = 1.15 * 1.05 * 2.86 * (0.105 * l_overall ** 2 + 1776 * l_overall * d_well + 2.735E5)
         result_list = ((c_well + other_costs) * self.beta + w_net_el * self.c_el) / useful_effects
 
-        return result_list
+        return result_list, c_well
 
 
 class economicEvaluator(baseEconomicEvaluator):
@@ -761,13 +768,15 @@ class economicEvaluator(baseEconomicEvaluator):
 
                 attr_list.append(np.nan)
 
-        return self.LCOx(
+        LCOx, self.c_well = self.LCOx(
 
             useful_effects=np.array(attr_list),
             l_overall= self.thermo.geom.l_tot,
             d_well=self.thermo.geom.d_well
 
         )
+
+        return LCOx
 
     def optimize_LOCx(self, xs: str) -> [float]:
 
