@@ -49,8 +49,8 @@ depth_list = np.unique(data_dict['depth'])
 grad_list = np.unique(data_dict['grad'])
 h_rel_list = np.unique(data_dict['h_rel'])
 
-curr_depth = depth_list[0]
-curr_grad = grad_list[7]
+curr_depth = depth_list[11]
+curr_grad = grad_list[11]
 
 curr_indices = np.where(np.logical_and.reduce((
 
@@ -61,36 +61,44 @@ curr_indices = np.where(np.logical_and.reduce((
 )))
 
 curr_dict = {header: data_dict[header][curr_indices] for header in headers}
+curr_h_rel_list = np.unique(curr_dict['h_rel'])
+
 
 # <---- INITIALIZING TOOLS ------------------------------------------------->
 input_point = ThermodynamicPoint(["Carbon Dioxide"], [1], unit_system="MASS BASE SI")
 output_point = input_point.duplicate()
 
 res_prop = ReservoirProperties()
+res_prop.grad = curr_grad
+
 economic_evaluator = baseEconomicEvaluator()
 economic_evaluator.Le = 20
-economic_evaluator.c_el = 0.3
 
 integrator = isobaricIntegral([input_point, output_point])
 integrator.solve_analytically = False
-T_rocks = 10 + curr_depth * curr_grad
-res_prop.grad = curr_grad
 
+T_rocks = 10 + curr_depth * curr_grad
 
 # <---- REFINING RESULTS ----------------------------------------------->
-method = "cubic"
-n_points_fine = 20
-h_rel_fine = 1 - np.logspace(-1.5, -0.35, n_points_fine)
-t_sat_fine = np.linspace(10, 25, n_points_fine)
-h_rel_fine, t_sat_fine = np.meshgrid(h_rel_fine, t_sat_fine)
+n_points_fine = 99
+sep_perc_list = np.logspace(-6, 0, n_points_fine+1)[:-1]
+sep_perc = np.tile(sep_perc_list, (len(curr_h_rel_list), 1))
 
-points = np.vstack((curr_dict['h_rel'], curr_dict['T_sat'])).T
-t_down_fine = griddata(points, curr_dict['T_down'], (h_rel_fine, t_sat_fine), method=method)
-p_down_fine = griddata(points, curr_dict['P_down'], (h_rel_fine, t_sat_fine), method=method)
-m_dot_fine = griddata(points, curr_dict['m_well'], (h_rel_fine, t_sat_fine), method=method)
-c_tot_fine = griddata(points, curr_dict['C_tot'], (h_rel_fine, t_sat_fine), method=method)
-w_net_fine = griddata(points, curr_dict['W_tot'], (h_rel_fine, t_sat_fine), method=method)
+t_down_fine = np.tile(curr_dict['T_1'], (n_points_fine, 1)).T
+p_down_fine = np.tile(curr_dict['P_2'], (n_points_fine, 1)).T
+c_tot_fine = np.tile(curr_dict['C_tot'], (n_points_fine, 1)).T
 
+m_dot_grid = np.tile(curr_dict['m_rete'], (n_points_fine, 1)).T
+w_turb1_fine = np.tile(curr_dict['W_turb1'], (n_points_fine, 1)).T
+w_turb2_fine = np.tile(curr_dict['W_turb2'], (n_points_fine, 1)).T
+w_comp_fine = np.tile(curr_dict['W_comp'], (n_points_fine, 1)).T
+
+m_dot_fine = m_dot_grid / (1 - sep_perc)
+w_turb2_fine = w_turb2_fine * sep_perc / (1 - sep_perc)
+w_net_fine = w_comp_fine - w_turb1_fine - w_turb2_fine
+
+
+# %%------------   EVALUATE LCOH                          -----------------------------------------------------------> #
 l_horiz_fine = np.empty(t_down_fine.shape)
 c_well_fine = np.empty(t_down_fine.shape)
 lcoh_fine = np.empty(t_down_fine.shape)
@@ -101,30 +109,32 @@ lcoh_fine[:] = np.nan
 
 optimal_LCOH = np.inf
 optimal_h_rel = np.nan
-optimal_t_sat = np.nan
+optimal_sep_perc = np.nan
 
-pbar = tqdm(total=n_points_fine**2)
-for i, h_rel in enumerate(h_rel_fine):
+pbar = tqdm(total=n_points_fine*len(curr_h_rel_list))
 
-    for j, t_sat in enumerate(t_sat_fine):
+if not np.isnan(t_down_fine[0, 0]):
 
-        if not np.isnan(t_down_fine[i, j]):
+    # <-- DEFINE INPUT POINTS ---------------------------->
+    T_in = t_down_fine[0, 0] + 273.15  # [°C] to [K]
+    P_in = p_down_fine[0, 0] * 1e3  # [kPa] to [Pa]
+    T_rocks_K = T_rocks + 273.15  # [°C] to [K]
 
-            # <-- DEFINE INPUT POINTS ---------------------------->
-            T_in = t_down_fine[i, j] + 273.15  # [°C] to [K]
-            P_in = p_down_fine[i, j] * 1e3  # [kPa] to [Pa]
-            T_rocks_K = T_rocks + 273.15  # [°C] to [K]
+    input_point.set_variable("P", P_in)
+    input_point.set_variable("T", T_in)
+    output_point.set_variable("P", P_in)
+    output_point.set_variable("T", T_rocks_K)
 
-            input_point.set_variable("P", P_in)
-            input_point.set_variable("T", T_in)
-            output_point.set_variable("P", P_in)
-            output_point.set_variable("T", T_rocks_K)
+    # <-- EVALUATE L_HORIZ ------------------------------->
+    integrator.limiting_points = (input_point, output_point)
+    UA = integrator.evaluate_integral(curr_h_rel_list)
+    UdAs = np.pi * d_well / res_prop.evaluate_rel_resistance(times=[time], d=d_well)[0]
 
-            # <-- EVALUATE L_HORIZ ------------------------------->
-            integrator.limiting_points = (input_point, output_point)
-            UA = integrator.evaluate_integral(h_rel_fine[i, j])
-            UdAs = np.pi * d_well / res_prop.evaluate_rel_resistance(times=[time], d=d_well)[0]
-            l_horiz = UA / UdAs * integrator.dh_max * m_dot_fine[i, j]
+    for i, h_rel in enumerate(curr_h_rel_list):
+
+        for j in range(len(sep_perc_list)):
+
+            l_horiz = UA[i] / UdAs * integrator.dh_max * m_dot_fine[i, j]
 
             if l_horiz > 0:
 
@@ -144,17 +154,18 @@ for i, h_rel in enumerate(h_rel_fine):
                 if lcoh_fine[i, j] < optimal_LCOH:
 
                     optimal_LCOH = lcoh_fine[i, j]
-                    optimal_h_rel = h_rel_fine[i, j]
-                    optimal_t_sat = t_sat_fine[i, j]
+                    optimal_h_rel = curr_h_rel_list[i]
+                    optimal_sep_perc = sep_perc[i, j]
 
-        pbar.update(1)
+            pbar.update(1)
 
 pbar.close()
 
 
 # %%------------   PLOT LCOH                              -----------------------------------------------------------> #
-plt.contourf(t_sat_fine, 1 - h_rel_fine, (l_horiz_fine))
-plt.plot(optimal_t_sat, 1-optimal_h_rel, marker='*', markersize=15, color='#FFD700')
-plt.yscale("log")
+x, y = np.meshgrid(curr_h_rel_list, sep_perc_list, indexing='ij')
+
+plt.contourf(x, y, np.log10(lcoh_fine))
+plt.plot(optimal_h_rel, optimal_sep_perc, marker='*', markersize=15, color='#FFD700')
 plt.colorbar()
 plt.show()

@@ -225,8 +225,7 @@ fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 # <-- FIRST AX ----------------------------------->
 axs[0].set_title("Optimal LCOH")
 
-
-contour = axs[0].contourf(grad_fine * 1e3, depth_fine/1e3, LCOH_fine, levels=25)
+contour = axs[0].contourf(grad_fine * 1e3, depth_fine/1e3, LCOH_fine, levels=25, cmap="viridis")
 
 tick_values = np.array([11, 25, 50, 100, 250])
 cbar = fig.colorbar(contour, ax=axs[0])
@@ -289,4 +288,4 @@ plt.tight_layout(pad=1)
 
 image_path = os.path.join(CURRENT_DIR, "0 - Output Plots", "Water (Base) - Optimal LCOH.png")
 plt.savefig(image_path, dpi=300)
-
+plt.show()
