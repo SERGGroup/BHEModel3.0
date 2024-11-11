@@ -9,6 +9,7 @@ from main_classes.constant import ARTICLE_CALCULATION_DIR
 from openpyxl import load_workbook
 import numpy as np
 import os
+import matplotlib.pyplot as plt
 
 
 # %%------------   GENERATE CALCULATION POINTS            -----------------------------------------------------------> #
@@ -124,3 +125,9 @@ for i, dt_HE in enumerate(curr_data['dT_HE']):
         other_costs=curr_data['c_tot'][i]
 
     )
+
+# %%------------              LCOH PLOT                  -----------------------------------------------------------> #
+
+plt.plot(curr_data['dT_HE'], curr_data['LCOH'])
+plt.axis([np.min(curr_data['dT_HE']), np.max(curr_data['dT_HE']), np.min(curr_data['LCOH']), np.max(curr_data['LCOH'])])
+plt.show()

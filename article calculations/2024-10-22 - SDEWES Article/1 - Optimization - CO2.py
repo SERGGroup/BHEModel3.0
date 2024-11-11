@@ -2,18 +2,18 @@
 import numpy as np
 import os
 
-n_points = 5
+n_points = 18
 
 depth_list = np.round(np.linspace(1000, 5000, n_points), 1)
 grad_list = np.round(np.linspace(30, 100, n_points), 1) / 1000
-h_rel = 1 - np.logspace(-3, -0.25, n_points)
-t_sat = np.linspace(10, 25, n_points)
+h_rel_list = 1 - np.logspace(-3, -0.05, n_points + 3)
 
-depth_list, grad_list, h_rel, t_sat = np.meshgrid(depth_list, grad_list, h_rel, t_sat, indexing='ij')
 
-depth_list = np.ravel(depth_list)
-grad_list = np.ravel(grad_list)
+depth, grad, h_rel = np.meshgrid(depth_list, grad_list, h_rel_list, indexing='ij')
+
+depth = np.ravel(depth)
+grad = np.ravel(grad)
 h_rel = np.ravel(h_rel)
-t_sat = np.ravel(t_sat)
 
-table = np.stack((depth_list, grad_list, h_rel, t_sat)).T
+
+table = np.stack((depth, grad, h_rel)).T
