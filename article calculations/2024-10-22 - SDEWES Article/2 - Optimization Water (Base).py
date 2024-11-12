@@ -223,7 +223,7 @@ fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 
 
 # <-- FIRST AX ----------------------------------->
-axs[0].set_title("Optimal LCOH")
+axs[0].set_title("Optimal LCOH [c€/kWh]")
 
 contour = axs[0].contourf(grad_fine * 1e3, depth_fine/1e3, LCOH_fine, levels=25, cmap="viridis")
 

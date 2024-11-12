@@ -5,7 +5,6 @@ from main_classes.geothermal_system.base_bhe import (
     ReservoirProperties, baseEconomicEvaluator
 
 )
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from main_classes.constant import ARTICLE_CALCULATION_DIR
 from scipy.ndimage import gaussian_filter1d
 from scipy.interpolate import griddata
@@ -198,7 +197,7 @@ lcoh_base_mask = np.where(
     np.logical_and.reduce((
 
         np.logical_not(np.isnan(opt_lcoh)),
-        depth_mesh * grad_mesh < 130,
+        #depth_mesh * grad_mesh < 130,
         depth_mesh * grad_mesh > 75,
 
     ))
@@ -227,7 +226,6 @@ length_mask = np.where(
     ))
 )
 
-
 depth_fine = np.linspace(np.min(depth_mesh[lcoh_pos_mask]), np.max(depth_mesh[lcoh_pos_mask]), n_fine)
 grad_fine = np.linspace(np.min(grad_mesh[lcoh_pos_mask]), np.max(grad_mesh[lcoh_pos_mask]), n_fine)
 depth_fine, grad_fine = np.meshgrid(depth_fine, grad_fine)
@@ -244,7 +242,7 @@ LCOH_ovr_fine = griddata(points, opt_lcoh[length_mask], (depth_fine, grad_fine),
 w_net_over_fine = griddata(points, opt_w_net[length_mask], (depth_fine, grad_fine), method=method)
 
 points = np.vstack((depth_mesh[lcoh_base_mask], grad_mesh[lcoh_base_mask])).T
-LCOH_fine_base = griddata(points, np.log(opt_lcoh[lcoh_base_mask]), (depth_fine, grad_fine), method=method)
+LCOH_fine_base = griddata(points, opt_lcoh[lcoh_base_mask], (depth_fine, grad_fine), method=method)
 
 # Find the depth with minimum LCOH for each gradient
 min_depths = []
@@ -261,12 +259,12 @@ for i in range(n_fine):
         min_depths.append(np.nan)
         min_gradients.append(np.nan)
 
-smooth_moving_average = True
+smooth_moving_average = False
 window_size = 15  # Adjust window size as needed
 half_window = window_size // 2
 
 smooth_gaussian = True
-sigma = 10
+sigma = 4
 
 min_depths = np.array(min_depths)
 min_gradients = np.array(min_gradients)
@@ -290,15 +288,15 @@ fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 
 
 # <-- FIRST AX ----------------------------------->
-axs[0].set_title("Optimal LCOH")
+axs[0].set_title("Optimal LCOH [c€/kWh]")
 
 contour = axs[0].contourf(grad_fine * 1e3, depth_fine/1e3, LCOH_fine, levels=25, cmap="viridis_r")
 
-tick_values = np.array([2.5, 25])
-cbar = fig.colorbar(contour, ax=axs[0], orientation="vertical")
+tick_values = np.array([1, 2, 5, 10, 20])
+cbar = fig.colorbar(contour, ax=axs[0], orientation='vertical', fraction=0.046, pad=0.01)
 cbar.set_ticks(np.log(tick_values / 100))
 cbar.set_ticklabels(['{}'.format(tick) for tick in tick_values])
-cbar.set_label('LCOH [c€/kWh]')
+cbar.ax.set_title('+')
 
 inline_values = np.array([5, 10, 15, 20, 25, 50])
 contour_lines = axs[0].contour(
@@ -318,11 +316,13 @@ plt.clabel(
 
 contour = axs[0].contourf(grad_fine * 1e3, depth_fine/1e3, LCOH_neg, levels=25, cmap="plasma")
 
-tick_values = np.array([0.25, 2.5, 25])
+tick_values = np.array([1, 2, 5, 15, 50])
 
-cbar = fig.colorbar(contour, ax=axs[0])
+cbar = fig.colorbar(contour, ax=axs[0], orientation='vertical', fraction=0.046, pad=0.1)
 cbar.set_ticks(np.log(tick_values / 100))
 cbar.set_ticklabels(['-{}'.format(tick) for tick in tick_values])
+cbar.ax.yaxis.set_ticks_position('left')
+cbar.ax.set_title('-')
 
 inline_values = np.array([5, 50])
 contour_lines = axs[0].contour(
@@ -345,11 +345,11 @@ axs[1].set_title("Optimal Horizontal Length [km]")
 
 contour = axs[1].contourf(grad_fine * 1e3, depth_fine/1e3, l_horiz_fine, levels=25)
 
-tick_values = np.array([1, 2.5, 5])
+tick_values = np.array([1, 2, 5])
 cbar = fig.colorbar(contour, ax=axs[1])
 cbar.set_ticks(np.log(tick_values*1e3))
 cbar.set_ticklabels(['{}'.format(tick) for tick in tick_values])
-cbar.set_label('Horizontal Length [km]')
+cbar.ax.set_title('[km]')
 
 inline_values = np.array([1, 2.5, 5])
 contour_lines = axs[1].contour(
