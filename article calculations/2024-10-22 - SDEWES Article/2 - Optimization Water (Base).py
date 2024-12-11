@@ -154,6 +154,8 @@ for curr_depth in depth_list:
 
             if final_results["LCOH"][i] < optimal_LCOH:
 
+                optimal_LCOH = final_results["LCOH"][i]
+
                 for key in optimal_key_to_save:
                     optimal_results[key][n] = final_results[key][i]
 
@@ -286,6 +288,6 @@ for ax in axs:
 
 plt.tight_layout(pad=1)
 
-image_path = os.path.join(CURRENT_DIR, "0 - Output Plots", "Water (Base) - Optimal LCOH.png")
-plt.savefig(image_path, dpi=300)
+# image_path = os.path.join(CURRENT_DIR, "0 - Output Plots", "Water (Base) - Optimal LCOH.png")
+# plt.savefig(image_path, dpi=300)
 plt.show()
