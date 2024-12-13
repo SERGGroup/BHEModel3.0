@@ -39,8 +39,8 @@ for Pe in [0, 0.1, 1, 10]:
 
     base_bhe.res_prop.pe = Pe
 
-    dh_percs, output_points = base_bhe.evaluate_HXG(times * 3.154e+7, m_dot=10)
-    plt.plot(times, dh_percs*base_bhe.integrator.dh_max*10/1e6, label="Pe={}".format(Pe))
+    results = base_bhe.evaluate_HXG(times=times * 3.154e+7, m_dot=10)
+    plt.plot(times, results['dh_perc'].T*base_bhe.integrator.dh_max*10/1e6, label="Pe={}".format(Pe))
 
 plt.legend()
 plt.xscale("log")

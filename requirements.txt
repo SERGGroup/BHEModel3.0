@@ -6,3 +6,6 @@ pandas
 arviz
 pymc
 openpyxl
+OWSLib
+requests
+Pillow

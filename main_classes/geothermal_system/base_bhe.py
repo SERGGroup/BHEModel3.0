@@ -723,6 +723,8 @@ class baseEconomicEvaluator:
     hy = 8000           # [h/year]
     c_el = 0.115        # [€/kWh]
 
+    ignore_well_cost = False
+
     @property
     def alpha(self):
         return (1 - (1 + self.i_rate) ** (-self.Le)) / self.i_rate
@@ -741,6 +743,11 @@ class baseEconomicEvaluator:
         """Result in [€/kWh], w_net_el in [kW], other_costs in [€], l_overall and d_well in [m]"""
 
         c_well = 1.15 * 1.05 * 2.86 * (0.105 * l_overall ** 2 + 1776 * l_overall * d_well + 2.735E5)
+
+        if self.ignore_well_cost:
+
+            c_well = 0
+
         result_list = ((c_well + other_costs) * self.beta + w_net_el * self.c_el) / useful_effects
 
         return result_list, c_well
