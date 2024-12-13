@@ -81,7 +81,6 @@ final_results = {header: np.empty(new_shape) for header in headers}
 for header in headers:
     final_results[header] = data_dict[header]
 
-
 final_results.update({"LCOH": np.empty(new_shape), "l_horiz": np.empty(new_shape), "c_well": np.empty(new_shape)})
 final_results["LCOH"][:] = np.nan
 final_results["l_horiz"][:] = np.nan
