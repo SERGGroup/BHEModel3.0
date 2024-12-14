@@ -1,11 +1,10 @@
 # %%------------   IMPORT MODULES                         -----------------------------------------------------------> #
-from main_classes.geothermal_system.base_bhe import (
-
-    isobaricIntegral, ThermodynamicPoint,
-    ReservoirProperties, baseEconomicEvaluator
-
-)
+from main_classes import BaseBHE, ReservoirProperties, BHEGeometry, baseEconomicEvaluator
+from REFPROPConnector import ThermodynamicPoint
+from scipy.optimize import minimize_scalar
 from scipy.interpolate import interp1d
+from functools import total_ordering
+from matplotlib import pyplot as plt
 from shapely.geometry import Point
 from pykml import parser
 import geopandas as gpd
@@ -88,12 +87,24 @@ class GMLInterpolator:
 
             return None
 
+    def is_inside(self, point):
 
+        for depth in self.__depths:
+
+            if not self.__gdf[depth].contains(point):
+                return False
+
+        return True
+
+@total_ordering
 class WellOptimizer:
 
-    fluids = ["Water", "CO2"]
+    m_dot = 10    # [kg/s]
+    time = 10 * (365 * 24 * 60 * 60)  # [years] to [s]
+    economic_evaluator = baseEconomicEvaluator()
+    economic_evaluator.Le = 20
 
-    def __init__(self, well_placemark, temp_gdf, temp_iterp):
+    def __init__(self, well_placemark, temp_gdf, temp_iterp, bhe_in):
 
         self.__placemark = well_placemark
         self.__temp_iterp = temp_iterp
@@ -104,7 +115,13 @@ class WellOptimizer:
         self.__analyze_extended_attr()
         self.__retrieve_information_online()
 
-        self.__init_thermo_well()
+        if self.can_be_optimized:
+
+            self.__init_thermo_well(bhe_in)
+
+    @property
+    def can_be_optimized(self):
+        return self.t_down is not None
 
     def __init_attributes(self):
 
@@ -117,6 +134,10 @@ class WellOptimizer:
         self.t_down = None
         self.outcome = None
         self.placement = None
+
+        self.h_rel_opt = None
+        self.lcoh_min = None
+        self.l_horiz_opt = None
 
     def __set_main_information(self):
 
@@ -182,25 +203,109 @@ class WellOptimizer:
                     elif cells[0] == 'Provincia':
                         self.placement = "Land"
 
-    def __init_thermo_well(self):
+    def __init_thermo_well(self, bhe_in):
 
-        pass
+        # Geometric Params
+        bhe_geom = BHEGeometry()
+        bhe_geom.depth = self.depth
+
+        # Reservoir Params
+        res_prop = ReservoirProperties()
+        res_prop.grad = self.t_down / self.depth
+
+        self.thermo_well = BaseBHE(bhe_in, reservoir_properties=res_prop, geometry=bhe_geom)
+        self.thermo_well.set_HX_condition()
 
     def optimize_h_rel(self):
 
-        pass
+        result = minimize_scalar(
+
+            (lambda x: self.evaluate_LCOx(x)[0]),
+            bounds=(0.001, 0.99), method='bounded'
+
+        )
+
+        if result.success:
+
+            self.h_rel_opt = result.x
+            self.lcoh_min, self.l_horiz_opt = self.evaluate_LCOx(self.h_rel_opt)
+
+    def evaluate_LCOx(self, h_rel):
+
+        # <-- EVALUATE L_HORIZ ------------------------------->
+        d_well = self.thermo_well.geom.d_well
+        integrator = self.thermo_well.integrator
+
+        UA = integrator.evaluate_integral(h_rel)
+        UdAs = np.pi * d_well / self.thermo_well.res_prop.evaluate_rel_resistance(times=[self.time], d=d_well)[0]
+        l_horiz = UA / UdAs * integrator.dh_max * self.m_dot
+        q_out = integrator.dh_max * self.m_dot * h_rel / 1e3
+
+        if l_horiz > 0:
+
+            # <-- EVALUATE LCOH ---------------------------------->
+            lcoh, c_well = self.economic_evaluator.LCOx(
+
+                useful_effects=q_out,
+                l_overall=l_horiz,
+                d_well=d_well,
+                other_costs=0.,
+                w_net_el=0.
+
+            )
+
+        else:
+
+            lcoh = np.inf
+
+        return lcoh, l_horiz
+
+    def __lt__(self, other):
+
+        if self.can_be_optimized and not other.can_be_optimized:
+            return True
+
+        elif not self.can_be_optimized and other.can_be_optimized:
+            return False
+
+        elif not self.can_be_optimized and not other.can_be_optimized:
+            return self.name < other.name
+
+        else:
+            return self.lcoh_min < other.lcoh_min
+
+    def __eq__(self, other):
+
+        if self.can_be_optimized and not other.can_be_optimized:
+            return False
+
+        elif not self.can_be_optimized and other.can_be_optimized:
+            return False
+
+        elif not self.can_be_optimized and not other.can_be_optimized:
+            return self.name == other.name
+
+        else:
+            return self.lcoh_min == other.lcoh_min
 
 
 class WellOptimizerList:
 
-    def __init__(self, kml_file, gml_fonder):
+    fluid = "Carbon Dioxide"
+    t_in = 10   # [°C]
+    bhe_in = ThermodynamicPoint([fluid], [1], unit_system="MASS BASE SI")
+    bhe_in.set_variable("T", t_in + 273.15)
+    bhe_in.set_variable("Q", 0)
+    # bhe_in.set_variable("P", 1e5)
+
+    def __init__(self, kml_file, gml_fonder, stop_after=-1):
 
         self.kml_file = kml_file
         self.temp_interp = GMLInterpolator(gml_fonder)
 
-        self.__init_wells()
+        self.__init_wells(stop_after)
 
-    def __init_wells(self):
+    def __init_wells(self, stop_after):
 
         self.wells = list()
         gdf = gpd.read_file(self.kml_file, driver='KML')
@@ -210,10 +315,13 @@ class WellOptimizerList:
 
         placemarks = doc.findall('.//{http://www.opengis.net/kml/2.2}Placemark')
 
-        pbar = tqdm(total=len(placemarks[:10]))
-        for placemark in placemarks[:10]:
+        pbar = tqdm(total=len(placemarks[:stop_after]))
+        for placemark in placemarks[:stop_after]:
 
-            self.wells.append(WellOptimizer(placemark, gdf, self.temp_interp))
+            self.wells.append(WellOptimizer(placemark, gdf, self.temp_interp, self.bhe_in))
+            if self.wells[-1].can_be_optimized:
+                self.wells[-1].optimize_h_rel()
+
             pbar.update(1)
 
         pbar.close()
@@ -228,6 +336,174 @@ class WellOptimizerList:
 
         return return_list
 
+    @property
+    def optimizable_wells(self):
+
+        return_list = list()
+        for well in self.wells:
+            if well.can_be_optimized:
+                return_list.append(well)
+
+        return return_list
+
+    def get_best_wells(self, n_best=5):
+
+        well_sorted = sorted(optimizer.wells)
+        return well_sorted[:n_best]
+
+    def get_summary(self):
+
+        optimizable_wells = self.optimizable_wells
+        summary = np.empty((len(optimizable_wells), 5))
+        summary[:, :] = np.nan
+
+        for i, well in enumerate(optimizable_wells):
+
+            summary[i, 0] = well.depth
+            summary[i, 1] = well.thermo_well.res_prop.grad
+            summary[i, 2] = well.lcoh_min
+            summary[i, 3] = well.l_horiz_opt
+            summary[i, 4] = well.h_rel_opt
+
+        return summary
+
+
+# %%------------   INITIALIZE OPTIMIZER                   -----------------------------------------------------------> #
+optimizer = WellOptimizerList(kml_file, GML_TEMP_FOLDER, stop_after=-1)
+best_wells = optimizer.get_best_wells(n_best=5)
+
 
 # %%------------   TEST WELL CLASS                        -----------------------------------------------------------> #
-optimizer = WellOptimizerList(kml_file, GML_TEMP_FOLDER)
+h_rels = np.linspace(0, 1, 350)[1:-1]
+lcoh_res = np.zeros(h_rels.shape)
+l_horiz_res = np.zeros(h_rels.shape)
+
+fig, axs = plt.subplots(1, 2, figsize=(12, 4))
+
+# FIRST AX (OPTIMIZATION PROCESS)
+ax = axs[0]
+ax_horiz = ax.twinx()
+
+for m_dot in [5, 10, 15]:
+
+    optimizer.wells[0].m_dot = m_dot
+    for i, h_rel in enumerate(h_rels):
+
+        lcoh_res[i], l_horiz_res[i] = optimizer.wells[0].evaluate_LCOx(h_rel)
+
+    line, = ax.plot(h_rels, lcoh_res*100)
+    ax_horiz.plot(h_rels, l_horiz_res/1e3, "--", color=line.get_color(), label='m_dot = {}kg/s'.format(m_dot))
+
+ax.set_xlabel("$h_{rel}$")
+ax.set_ylabel("LCOH [c€/kWh]")
+ax_horiz.set_ylabel("$l_{horiz}$ [km]")
+ax.set_yscale("log")
+ax_horiz.set_yscale("log")
+ax_horiz.legend()
+
+# SECOND AX (OPTIMAL POINT DESCRIPTION)
+ax = axs[1]
+ax_horiz = ax.twinx()
+m_dot_list = np.linspace(5, 15, 30)
+opt_lcoh = np.zeros(m_dot_list.shape)
+opt_l_horiz = np.zeros(m_dot_list.shape)
+
+for j, m_dot in enumerate(m_dot_list):
+
+    optimizer.wells[0].m_dot = m_dot
+    result = minimize_scalar((lambda x: optimizer.wells[0].evaluate_LCOx(x)[0]), bounds=(0.001, 0.99), method='bounded')
+    opt_lcoh[j], opt_l_horiz[j] = optimizer.wells[0].evaluate_LCOx(result.x)
+
+ax.plot(m_dot_list, opt_lcoh*100)
+ax_horiz.plot(m_dot_list, opt_l_horiz / 1e3, "--")
+ax.set_xlabel("m_dot [kg/s]")
+ax.set_ylabel("LCOH [c€/kWh]")
+ax_horiz.set_ylabel("$l_{horiz}$ [km]")
+plt.suptitle(f"Optimization of the \"{optimizer.wells[0].name}\" well")
+plt.tight_layout()
+plt.savefig(os.path.join(CURRENT_DIR, "0 - Output", f"optimization_process.png"), dpi=300)
+plt.show()
+
+
+# %%------------   EVALUATE MAP OF ITALY                  -----------------------------------------------------------> #
+n = 5
+optimizable_wells = sorted(optimizer.optimizable_wells)[1:]
+
+def idw_interpolation(longitude, latitude, power=2):
+
+    point = Point(longitude, latitude)
+
+    if optimizer.temp_interp.get_interpolator(longitude, latitude) is not None:
+
+        values = 0.
+        weights = 0.
+
+        for well in optimizable_wells:
+
+            dist = well.position.distance(point)
+            if dist == 0:
+                values = well.lcoh_min
+                weights = 1
+                break
+
+            else:
+
+                w = (1 / dist) ** power
+                values += well.lcoh_min * w
+                weights += w
+
+
+        return values/weights
+
+    else:
+
+        return np.nan
+
+lat_min, lat_max = 35.5, 47.1
+lon_min, lon_max = 6.6, 18.5
+n_points = 400j
+grid_lon, grid_lat = np.mgrid[lon_min:lon_max:n_points, lat_min:lat_max:n_points]
+
+pbar = tqdm(total=grid_lon.shape[0] * grid_lon.shape[1], desc="Calculating map")
+grid_z = np.zeros_like(grid_lon)
+for i in range(grid_lon.shape[0]):
+    for j in range(grid_lon.shape[1]):
+        grid_z[i, j] = idw_interpolation(grid_lon[i, j], grid_lat[i, j], power=n)
+        pbar.update(1)
+
+pbar.close()
+
+
+# %%------------   PLOT MAP OF ITALY                      -----------------------------------------------------------> #
+best_wells = optimizer.get_best_wells(n_best=61)[1:]
+plt.figure(figsize=(10, 10))
+
+for well in best_wells[30:]:
+    plt.plot(well.position.x, well.position.y, marker='*', markersize=15, color='#e38614', alpha=1)
+
+for well in best_wells[10:30]:
+    plt.plot(well.position.x, well.position.y, marker='*', markersize=15, color='#adadad', alpha=1)
+
+for well in best_wells[:10]:
+    plt.plot(well.position.x, well.position.y, marker='*', markersize=15, color='#FFD700')
+
+plt.pcolormesh(grid_lon, grid_lat, np.log10(grid_z*100), shading='auto', cmap='viridis')
+plt.colorbar(label='$log_{10}(LCOH)$ [c€/kWh]')
+
+plt.title(f'LCOH map')
+plt.xlabel('Longitude')
+plt.ylabel('Latitude')
+plt.savefig(os.path.join(CURRENT_DIR, "0 - Output", f"LCOH map.png"), dpi=300)
+plt.show()
+
+
+# %%------------   GENERATE BEST WELL LIST                -----------------------------------------------------------> #
+output_txt = "{}\t{}\t{}\t{}\t{}\t{}\n".format("Name", "Depth[m]", "T_down [C]", "l_horiz [m]", "LCOH [cEURO/kWh]", "link")
+best_wells = optimizer.get_best_wells(n_best=500)[1:]
+
+for well in best_wells:
+
+    output_txt += "{}\t{}\t{}\t{}\t{}\t{}\n".format(well.name, well.depth, well.t_down, well.l_horiz_opt, well.lcoh_min, well.link)
+
+with open(os.path.join(CURRENT_DIR, "0 - Output", f"best_wells.csv"), "w") as f:
+    f.write(output_txt)
