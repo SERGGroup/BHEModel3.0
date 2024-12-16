@@ -20,7 +20,7 @@ n_points = 8
 depth_list = np.round(np.linspace(1000, 5000, n_points), 1)
 grad_list = np.round(np.linspace(30, 100, n_points), 1) / 1000
 h_rel = np.logspace(-1, -0.01, n_points)
-alpha_0 = np.linspace(1, 2, n_points)
+alpha_0 = np.linspace(0, 1, n_points)
 
 depth_list, grad_list, dt_HE, alpha_0 = np.meshgrid(depth_list, grad_list, h_rel, alpha_0, indexing='ij')
 
@@ -38,8 +38,8 @@ file_path = os.path.join(CURRENT_DIR, "0 - Results", "Water HP (Base) - V1.0.xls
 
 workbook = load_workbook(filename=file_path)
 
-# sheet = workbook['Results - HP Mode']
-sheet = workbook['Results - ORC Mode']
+sheet = workbook['Results - HP Mode']
+# sheet = workbook['Results - ORC Mode']
 n_rows = sheet.max_row - 1
 
 headers = [cell.value for cell in sheet[1]]
