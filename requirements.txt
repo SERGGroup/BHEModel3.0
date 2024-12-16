@@ -6,3 +6,10 @@ pandas
 arviz
 pymc
 openpyxl
+OWSLib
+requests
+Pillow
+geopandas
+lxml
+fiona
+pykml

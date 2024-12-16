@@ -81,7 +81,6 @@ final_results = {header: np.empty(new_shape) for header in headers}
 for header in headers:
     final_results[header] = data_dict[header]
 
-
 final_results.update({"LCOH": np.empty(new_shape), "l_horiz": np.empty(new_shape), "c_well": np.empty(new_shape)})
 final_results["LCOH"][:] = np.nan
 final_results["l_horiz"][:] = np.nan
@@ -157,7 +156,10 @@ for curr_depth in depth_list:
                 optimal_LCOH = final_results["LCOH"][i]
 
                 for key in optimal_key_to_save:
+
                     optimal_results[key][n] = final_results[key][i]
+
+                optimal_LCOH = final_results["LCOH"][i]
 
         n += 1
 
@@ -191,10 +193,19 @@ l_horiz_fine = griddata(points, np.log(optimal_results['l_horiz'][nan_mask]), (d
 # Find the depth with minimum LCOH for each gradient
 min_depths = []
 min_gradients = []
+min_LCOH = []
+min_lwell = []
 for i in range(n_fine):
     min_index = np.nanargmin(LCOH_fine[i, :])
     min_depths.append(depth_fine[i, min_index])
     min_gradients.append(grad_fine[i, min_index])
+    min_LCOH.append(LCOH_fine[i, min_index])
+    min_lwell.append(l_horiz_fine[i, min_index])
+
+min_depths = np.array(min_depths)
+min_gradients = np.array(min_gradients)
+min_LCOH = np.array(min_LCOH)
+min_lwell = np.array(min_lwell)
 
 smooth_moving_average = True
 window_size = 15  # Adjust window size as needed
@@ -203,11 +214,10 @@ half_window = window_size // 2
 smooth_gaussian = True
 sigma = 10
 
-min_depths = np.array(min_depths)
-min_gradients = np.array(min_gradients)
-
 smoothed_depths = min_depths.copy()
 smoothed_gradients = min_gradients.copy()
+smoothed_min_LCOH = min_LCOH.copy()
+smoothed_min_lwell = min_lwell.copy()
 
 if smooth_moving_average:
 
@@ -215,11 +225,15 @@ if smooth_moving_average:
     for i in range(half_window, len(min_depths) - half_window):
         smoothed_depths[i] = np.mean(min_depths[i - half_window : i + half_window + 1])
         smoothed_gradients[i] = np.mean(min_gradients[i - half_window : i + half_window + 1])
+        smoothed_min_LCOH[i] = np.mean(smoothed_min_LCOH[i - half_window : i + half_window + 1])
+        smoothed_min_lwell[i] = np.mean(smoothed_min_lwell[i - half_window : i + half_window + 1])
 
 if smooth_gaussian:
 
     smoothed_depths = gaussian_filter1d(smoothed_depths, sigma=sigma)
     smoothed_gradients = gaussian_filter1d(smoothed_gradients, sigma=sigma)
+    smoothed_min_LCOH = gaussian_filter1d(smoothed_min_LCOH, sigma=sigma)
+    smoothed_min_lwell = gaussian_filter1d(smoothed_min_lwell, sigma=sigma)
 
 fig, axs = plt.subplots(1, 2, figsize=(12, 5))
 
@@ -291,3 +305,26 @@ plt.tight_layout(pad=1)
 # image_path = os.path.join(CURRENT_DIR, "0 - Output Plots", "Water (Base) - Optimal LCOH.png")
 # plt.savefig(image_path, dpi=300)
 plt.show()
+
+
+# %%------------   PLOT OPTIMIZED DEPTH                   -----------------------------------------------------------> #
+plt.plot(min_gradients*1e3, np.exp(min_LCOH)*100, 'b-', label='LCOH')
+plt.xlabel("Geothermal Gradient [°C/km]")
+plt.ylabel("LCOH [c€/kWh]")
+plt.ylim([-10, 40])
+image_path = os.path.join(CURRENT_DIR, "0 - Output Plots", "Water (Base) - Optimal LCOH profile.png")
+plt.savefig(image_path, dpi=300)
+plt.show()
+
+
+# %%------------   PLOT OPTIMIZATION CONDITION            -----------------------------------------------------------> #
+plt.plot(smoothed_gradients*1e3, np.exp(smoothed_min_lwell)/1000, label='l_horiz')
+plt.plot(smoothed_gradients*1e3, smoothed_depths/1e3, label='depth')
+plt.legend()
+plt.xlabel("Geothermal Gradient [°C/km]")
+plt.ylabel("length [km]")
+plt.ylim([0, 6])
+image_path = os.path.join(CURRENT_DIR, "0 - Output Plots", "Water (Base) - Optimal depth and length.png")
+plt.savefig(image_path, dpi=300)
+plt.show()
+
