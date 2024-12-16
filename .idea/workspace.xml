@@ -4,8 +4,8 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="67976461-5220-4155-ae84-cc4d236868ce" name="Changes" comment="CO2 Base Case - New Layout 2.0">
-      <change beforePath="$PROJECT_DIR$/article calculations/2024-10-22 - SDEWES Article/3 - Optimization Water HP_ORC (Base) - First Test.py" beforeDir="false" afterPath="$PROJECT_DIR$/article calculations/2024-10-22 - SDEWES Article/3 - Optimization Water HP_ORC (Base) - First Test.py" afterDir="false" />
+    <list default="true" id="67976461-5220-4155-ae84-cc4d236868ce" name="Changes" comment="DHN Thermal Power Effect - EES and Excel Files Upload">
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -87,7 +87,7 @@
       <workItem from="1733756432191" duration="22005000" />
       <workItem from="1733912365422" duration="1506000" />
       <workItem from="1734096147208" duration="2633000" />
-      <workItem from="1734340123750" duration="1683000" />
+      <workItem from="1734340123750" duration="2558000" />
     </task>
     <task id="LOCAL-00001" summary="File EES Conference Article">
       <option name="closed" value="true" />
@@ -153,7 +153,23 @@
       <option name="project" value="LOCAL" />
       <updated>1733912572138</updated>
     </task>
-    <option name="localTasksCounter" value="9" />
+    <task id="LOCAL-00009" summary="DHN Thermal Power Effect - EES and Excel Files Upload">
+      <option name="closed" value="true" />
+      <created>1734346561258</created>
+      <option name="number" value="00009" />
+      <option name="presentableId" value="LOCAL-00009" />
+      <option name="project" value="LOCAL" />
+      <updated>1734346561258</updated>
+    </task>
+    <task id="LOCAL-00010" summary="DHN Thermal Power Effect - EES and Excel Files Upload">
+      <option name="closed" value="true" />
+      <created>1734346593587</created>
+      <option name="number" value="00010" />
+      <option name="presentableId" value="LOCAL-00010" />
+      <option name="project" value="LOCAL" />
+      <updated>1734346593587</updated>
+    </task>
+    <option name="localTasksCounter" value="11" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -176,7 +192,8 @@
     <MESSAGE value="SDEWES EES Files 2.0" />
     <MESSAGE value="CO2 Base Case + Excel File" />
     <MESSAGE value="CO2 Base Case - New Layout 2.0" />
-    <option name="LAST_COMMIT_MESSAGE" value="CO2 Base Case - New Layout 2.0" />
+    <MESSAGE value="DHN Thermal Power Effect - EES and Excel Files Upload" />
+    <option name="LAST_COMMIT_MESSAGE" value="DHN Thermal Power Effect - EES and Excel Files Upload" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
