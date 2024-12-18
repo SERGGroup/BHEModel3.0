@@ -6,6 +6,12 @@
   <component name="ChangeListManager">
     <list default="true" id="67976461-5220-4155-ae84-cc4d236868ce" name="Changes" comment="DHN Thermal Power Effect - EES and Excel Files Upload">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/0.0 - Q_dh Effect/1 MW.EES" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/1 - Water - Q_dh Effect/1 MW.EES" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/0.0 - Q_dh Effect/10 MW.EES" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/1 - Water - Q_dh Effect/10 MW.EES" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/0.0 - Q_dh Effect/100 kW.EES" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/1 - Water - Q_dh Effect/100 kW.EES" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/0.0 - Q_dh Effect/5 MW.EES" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/1 - Water - Q_dh Effect/5 MW.EES" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/0.0 - Q_dh Effect/500 kW.EES" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/1 - Water - Q_dh Effect/500 kW.EES" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/Q_dh Effect/1 - DH Thermal Power Effect Results.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/1 - Water - Q_dh Effect/1 - DH Thermal Power Effect Results.xlsx" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -53,6 +59,8 @@
       <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\article calculations\2024-10-22 - SDEWES Article\0 - EES Files" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\calculation\article calculations\2024-10-22 - SDEWES Article\0 - Results" />
+      <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\calculation\article calculations\2024-10-22 - SDEWES Article\0 - EES Files" />
       <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\article calculations\2024-10-22 - SDEWES Article\0 - EES Files" />
     </key>
   </component>
@@ -87,7 +95,8 @@
       <workItem from="1733756432191" duration="22005000" />
       <workItem from="1733912365422" duration="1506000" />
       <workItem from="1734096147208" duration="2633000" />
-      <workItem from="1734340123750" duration="2558000" />
+      <workItem from="1734340123750" duration="3395000" />
+      <workItem from="1734353969728" duration="1312000" />
     </task>
     <task id="LOCAL-00001" summary="File EES Conference Article">
       <option name="closed" value="true" />
@@ -169,7 +178,15 @@
       <option name="project" value="LOCAL" />
       <updated>1734346593587</updated>
     </task>
-    <option name="localTasksCounter" value="11" />
+    <task id="LOCAL-00011" summary="DHN Thermal Power Effect - EES and Excel Files Upload">
+      <option name="closed" value="true" />
+      <created>1734347916653</created>
+      <option name="number" value="00011" />
+      <option name="presentableId" value="LOCAL-00011" />
+      <option name="project" value="LOCAL" />
+      <updated>1734347916653</updated>
+    </task>
+    <option name="localTasksCounter" value="12" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
