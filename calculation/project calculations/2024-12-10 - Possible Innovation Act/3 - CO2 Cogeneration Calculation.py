@@ -103,7 +103,7 @@ class WellOptimizer:
     time = 10 * (365 * 24 * 60 * 60)  # [years] to [s]
     economic_evaluator = baseEconomicEvaluator()
     economic_evaluator.Le = 20
-
+    economic_evaluator.c_el = 0.20        # [€/kWh]
     def __init__(self, well_placemark, temp_gdf, temp_iterp, bhe_in):
 
         self.__placemark = well_placemark
@@ -122,6 +122,13 @@ class WellOptimizer:
     @property
     def can_be_optimized(self):
         return self.t_down is not None
+
+    @property
+    def w_dot_opt(self):
+
+        """return w_dot in W"""
+
+        return self.thermo_well.integrator.dh_max * self.m_dot * self.h_rel_opt
 
     def __init_attributes(self):
 
@@ -239,18 +246,25 @@ class WellOptimizer:
         UA = integrator.evaluate_integral(h_rel)
         UdAs = np.pi * d_well / self.thermo_well.res_prop.evaluate_rel_resistance(times=[self.time], d=d_well)[0]
         l_horiz = UA / UdAs * integrator.dh_max * self.m_dot
-        q_out = integrator.dh_max * self.m_dot * h_rel / 1e3
+        self.q_out = integrator.dh_max * self.m_dot * h_rel / 1e3
+
+        self.thermo_well.evaluate_surface(h_rel=h_rel, eta_exp=0.7)
+        real_points = self.thermo_well.real_points
+        surf_points = self.thermo_well.surf_points
+
+        self.w_exp = (real_points[-1].get_variable("H") - surf_points[0].get_variable("H")) * self.m_dot / 1e3
+        self.q_heat = (surf_points[0].get_variable("H") - surf_points[1].get_variable("H")) * self.m_dot / 1e3
 
         if l_horiz > 0:
 
             # <-- EVALUATE LCOH ---------------------------------->
             lcoh, c_well = self.economic_evaluator.LCOx(
 
-                useful_effects=q_out,
+                useful_effects=self.q_heat,
                 l_overall=l_horiz,
                 d_well=d_well,
-                other_costs=0.,
-                w_net_el=0.
+                other_costs=1e6,
+                w_net_el=-self.w_exp
 
             )
 
@@ -296,7 +310,6 @@ class WellOptimizerList:
     bhe_in = ThermodynamicPoint([fluid], [1], unit_system="MASS BASE SI")
     bhe_in.set_variable("T", t_in + 273.15)
     bhe_in.set_variable("Q", 0)
-    # bhe_in.set_variable("P", 1e5)
 
     def __init__(self, kml_file, gml_fonder, stop_after=-1):
 
@@ -377,6 +390,8 @@ best_wells = optimizer.get_best_wells(n_best=5)
 h_rels = np.linspace(0, 1, 350)[1:-1]
 lcoh_res = np.zeros(h_rels.shape)
 l_horiz_res = np.zeros(h_rels.shape)
+w_exp_res = np.zeros(h_rels.shape)
+q_heat_res = np.zeros(h_rels.shape)
 
 fig, axs = plt.subplots(1, 2, figsize=(12, 4))
 
@@ -384,15 +399,19 @@ fig, axs = plt.subplots(1, 2, figsize=(12, 4))
 ax = axs[0]
 ax_horiz = ax.twinx()
 
-for m_dot in [5, 10, 15]:
+for m_dot in np.array([5, 10, 15]) * 2:
 
     optimizer.wells[0].m_dot = m_dot
     for i, h_rel in enumerate(h_rels):
 
         lcoh_res[i], l_horiz_res[i] = optimizer.wells[0].evaluate_LCOx(h_rel)
+        w_exp_res[i] = optimizer.wells[0].w_exp
+        q_heat_res[i] = optimizer.wells[0].q_heat
 
     line, = ax.plot(h_rels, lcoh_res*100)
     ax_horiz.plot(h_rels, l_horiz_res/1e3, "--", color=line.get_color(), label='m_dot = {}kg/s'.format(m_dot))
+    # line, = ax.plot(h_rels, w_exp_res)
+    # ax_horiz.plot(h_rels, q_heat_res, "--", color=line.get_color(), label='m_dot = {}kg/s'.format(m_dot))
 
 ax.set_xlabel("$h_{rel}$")
 ax.set_ylabel("LCOH [c€/kWh]")
@@ -498,12 +517,27 @@ plt.show()
 
 
 # %%------------   GENERATE BEST WELL LIST                -----------------------------------------------------------> #
-output_txt = "{}\t{}\t{}\t{}\t{}\t{}\n".format("Name", "Depth[m]", "T_down [C]", "l_horiz [m]", "LCOH [cEURO/kWh]", "link")
+output_txt = "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(
+
+    "Name", "Depth[m]", "T_down [C]",
+    "l_horiz [m]", "LCOH [cEURO/kWh]",
+    "Q_dot [MW]", "W_net [kW]",
+    "T_turb_out [C]", "x_turb_out [-]",
+    "link"
+
+)
 best_wells = optimizer.get_best_wells(n_best=500)[1:]
 
 for well in best_wells:
 
-    output_txt += "{}\t{}\t{}\t{}\t{}\t{}\n".format(well.name, well.depth, well.t_down, well.l_horiz_opt, well.lcoh_min, well.link)
+    output_txt += "{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\t{}\n".format(
+
+        well.name, well.depth, well.t_down,
+        well.l_horiz_opt, well.lcoh_min, well.q_heat / 1e3, well.w_exp,
+        well.thermo_well.surf_points[0].get_variable("T") - 273.15, well.thermo_well.surf_points[0].get_variable("Q"),
+        well.link
+
+    )
 
 with open(os.path.join(CURRENT_DIR, "0 - Output", f"best_wells.csv"), "w") as f:
     f.write(output_txt)

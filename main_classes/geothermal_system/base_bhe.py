@@ -489,6 +489,8 @@ class BaseBHE:
 
         self.__ideal_points = [si_intput, si_intput.duplicate(), si_intput.duplicate(), si_intput.duplicate()]
         self.__real_points = [si_intput.duplicate(), si_intput.duplicate()]
+        self.__surf_points = [si_intput.duplicate(), si_intput.duplicate()]
+
         self.__tmp_point = si_intput.duplicate()
 
         self.integrator = isobaricIntegral([si_intput, si_intput])
@@ -536,6 +538,17 @@ class BaseBHE:
         for real_point in self.__real_points:
 
             return_list.append(real_point.get_alternative_unit_system(self.__user_unit_system))
+
+        return return_list
+
+    @property
+    def surf_points(self) -> List[ThermodynamicPoint]:
+
+        return_list = list()
+
+        for point in self.__surf_points:
+
+            return_list.append(point.get_alternative_unit_system(self.__user_unit_system))
 
         return return_list
 
@@ -714,6 +727,28 @@ class BaseBHE:
 
         return surface_result
 
+    def evaluate_surface(self, h_rel, eta_exp=0.7):
+
+        h_down = self.__ideal_points[1].get_variable("H") + self.integrator.dh_max * h_rel
+        dh_vert = cst.g * self.geom.depth
+
+        self.__real_points[0].set_variable("H", h_down)
+        self.__real_points[0].set_variable("P", self.__ideal_points[1].get_variable("P"))
+
+        self.__real_points[1].set_variable("H", self.__real_points[0].get_variable("H") - dh_vert)
+        self.__real_points[1].set_variable("S", self.__real_points[0].get_variable("S"))
+
+        self.__tmp_point.set_variable("P", self.__ideal_points[0].get_variable("P"))
+        self.__tmp_point.set_variable("S", self.__real_points[0].get_variable("S"))
+
+        dh_iso = (self.__real_points[1].get_variable("H") - self.__tmp_point.get_variable("H"))
+        h_out_ext = self.__real_points[1].get_variable("H") - dh_iso * eta_exp
+
+        self.__surf_points[0].set_variable("H", h_out_ext)
+        self.__surf_points[0].set_variable("P", self.__ideal_points[0].get_variable("P"))
+
+        self.__ideal_points[0].copy_state_to(self.__surf_points[1])
+
 
 class baseEconomicEvaluator:
 
@@ -723,7 +758,7 @@ class baseEconomicEvaluator:
     hy = 8000           # [h/year]
     c_el = 0.115        # [€/kWh]
 
-    ignore_well_cost = False
+    c_well_perc = 1.
 
     @property
     def alpha(self):
@@ -742,12 +777,9 @@ class baseEconomicEvaluator:
 
         """Result in [€/kWh], w_net_el in [kW], other_costs in [€], l_overall and d_well in [m]"""
 
-        c_well = 1.15 * 1.05 * 2.86 * (0.105 * l_overall ** 2 + 1776 * l_overall * d_well + 2.735E5)
+        c_well_correlation = 1.15 * 1.05 * 2.86 * (0.105 * l_overall ** 2 + 1776 * l_overall * d_well + 2.735E5)
 
-        if self.ignore_well_cost:
-
-            c_well = 0
-
+        c_well = c_well_correlation * self.c_well_perc
         result_list = ((c_well + other_costs) * self.beta + w_net_el * self.c_el) / useful_effects
 
         return result_list, c_well
