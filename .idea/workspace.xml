@@ -4,14 +4,29 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="67976461-5220-4155-ae84-cc4d236868ce" name="Changes" comment="DHN Thermal Power Effect - EES and Excel Files Upload">
+    <list default="true" id="67976461-5220-4155-ae84-cc4d236868ce" name="Changes" comment="CO2 DHN Thermal Power Effect - EES and Excel Files Upload">
+      <change afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/CO2 - Well Model V2.0.EES" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/1 - DH Network Calculation/CO2 Case V1.0.xlsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/1 - DH Network Calculation/Water Case.xlsx" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/4.1 - Optimization CO2 - First Test.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/4.2 - Optimization CO2 - Overall.py" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/4.3 - Optimization CO2 V3.0.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/0.0 - Q_dh Effect/1 MW.EES" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/1 - Water - Q_dh Effect/1 MW.EES" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/0.0 - Q_dh Effect/10 MW.EES" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/1 - Water - Q_dh Effect/10 MW.EES" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/0.0 - Q_dh Effect/100 kW.EES" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/1 - Water - Q_dh Effect/100 kW.EES" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/0.0 - Q_dh Effect/5 MW.EES" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/1 - Water - Q_dh Effect/5 MW.EES" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/0.0 - Q_dh Effect/500 kW.EES" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/1 - Water - Q_dh Effect/500 kW.EES" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/Q_dh Effect/1 - DH Thermal Power Effect Results.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/1 - Water - Q_dh Effect/1 - DH Thermal Power Effect Results.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/CO2 - Well Model.EES" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/CO2 - Well Model V1.0.EES" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/Calculation Points Generator.py" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - EES Files/Calculation Points Generator.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Output Plots/CO2 (Base) V2.0 - Optimal LCOH profile.png" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Output Plots/CO2 (Base) V2.0 - Optimal LCOH profile.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Output Plots/CO2 (Base) V2.0 - Optimal LCOH.png" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Output Plots/CO2 (Base) V2.0 - Optimal LCOH.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Output Plots/CO2 (Base) V2.0 - Optimal depth and length.png" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Output Plots/CO2 (Base) V2.0 - Optimal depth and length.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Output Plots/Water (Base) - Optimal LCOH profile.png" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Output Plots/Water (Base) - Optimal LCOH profile.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Output Plots/Water (Base) - Optimal depth and length.png" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Output Plots/Water (Base) - Optimal depth and length.png" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/1 - Water - Q_dh Effect/0 - H2O DH Thermal Power Effect Results.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/2 - Water - Q_dh Effect/0 - H2O DH Thermal Power Effect Results.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/2 - CO2 - Q_dh Effect/0 - CO2 DH Thermal Power Effect Results.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/3 - CO2 - Q_dh Effect/0 - CO2 DH Thermal Power Effect Results.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/CO2 - V1.0 (Base).xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/0 - Base Case/CO2 - V1.0 (Base).xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/CO2 - V2.0 (Base).xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/0 - Base Case/CO2 - V2.0 (Base).xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/Water (Base).xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/0 - Base Case/Water (Base).xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/Water HP (Base) - V1.0.xlsx" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/0 - Results/0 - Base Case/Water HP (Base) - V1.0.xlsx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/1.2 - Optimization CO2 (Base) V2.0 - Overall.py" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/1.2 - Optimization CO2 (Base) V2.0 - Overall.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/2 - Optimization Water (Base).py" beforeDir="false" afterPath="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/2 - Optimization Water (Base).py" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -39,29 +54,36 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;Python.3 - Optimization Water HP_ORC (Base).executor&quot;: &quot;Debug&quot;,
-    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;main&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/iggig/PycharmProjects/BHEModel3.0/article calculations/2024-10-22 - SDEWES Article/0 - EES Files&quot;,
-    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
-    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
-    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
-    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
-    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
-    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Python.3 - Optimization Water HP_ORC (Base).executor": "Debug",
+    "Python.4.2 - Optimization CO2 - Overall.executor": "Debug",
+    "Python.4.3 - Optimization CO2 V3.0.executor": "Debug",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "git-widget-placeholder": "main",
+    "last_opened_file_path": "C:/Users/iggig/PycharmProjects/BHEModel3.0/calculation/article calculations/2024-10-22 - SDEWES Article",
+    "node.js.detected.package.eslint": "true",
+    "node.js.detected.package.tslint": "true",
+    "node.js.selected.package.eslint": "(autodetect)",
+    "node.js.selected.package.tslint": "(autodetect)",
+    "nodejs_package_manager_path": "npm",
+    "vue.rearranger.settings.migration": "true"
   }
-}</component>
+}]]></component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\calculation\article calculations\2024-10-22 - SDEWES Article" />
+      <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\calculation\article calculations\2024-10-22 - SDEWES Article\0 - EES Files" />
+      <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\calculation\article calculations\2024-10-22 - SDEWES Article\0 - Results" />
       <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\article calculations\2024-10-22 - SDEWES Article\0 - EES Files" />
     </key>
     <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\calculation\article calculations\2024-10-22 - SDEWES Article" />
+      <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\calculation\article calculations\2024-10-22 - SDEWES Article\0 - Results\0 - Base Case" />
+      <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\calculation\article calculations\2024-10-22 - SDEWES Article\0 - Results\2 - CO2 - Q_dh Effect" />
       <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\calculation\article calculations\2024-10-22 - SDEWES Article\0 - Results" />
       <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\calculation\article calculations\2024-10-22 - SDEWES Article\0 - EES Files" />
-      <recent name="C:\Users\iggig\PycharmProjects\BHEModel3.0\article calculations\2024-10-22 - SDEWES Article\0 - EES Files" />
     </key>
   </component>
   <component name="SharedIndexes">
@@ -96,7 +118,11 @@
       <workItem from="1733912365422" duration="1506000" />
       <workItem from="1734096147208" duration="2633000" />
       <workItem from="1734340123750" duration="3395000" />
-      <workItem from="1734353969728" duration="1312000" />
+      <workItem from="1734353969728" duration="6985000" />
+      <workItem from="1734709727389" duration="18449000" />
+      <workItem from="1736259438061" duration="963000" />
+      <workItem from="1736260886865" duration="20000" />
+      <workItem from="1736260916589" duration="19745000" />
     </task>
     <task id="LOCAL-00001" summary="File EES Conference Article">
       <option name="closed" value="true" />
@@ -186,7 +212,23 @@
       <option name="project" value="LOCAL" />
       <updated>1734347916653</updated>
     </task>
-    <option name="localTasksCounter" value="12" />
+    <task id="LOCAL-00012" summary="CO2 DHN Thermal Power Effect - EES and Excel Files Upload">
+      <option name="closed" value="true" />
+      <created>1734528594508</created>
+      <option name="number" value="00012" />
+      <option name="presentableId" value="LOCAL-00012" />
+      <option name="project" value="LOCAL" />
+      <updated>1734528594508</updated>
+    </task>
+    <task id="LOCAL-00013" summary="CO2 DHN Thermal Power Effect - EES and Excel Files Upload">
+      <option name="closed" value="true" />
+      <created>1734528699223</created>
+      <option name="number" value="00013" />
+      <option name="presentableId" value="LOCAL-00013" />
+      <option name="project" value="LOCAL" />
+      <updated>1734528699223</updated>
+    </task>
+    <option name="localTasksCounter" value="14" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -210,7 +252,8 @@
     <MESSAGE value="CO2 Base Case + Excel File" />
     <MESSAGE value="CO2 Base Case - New Layout 2.0" />
     <MESSAGE value="DHN Thermal Power Effect - EES and Excel Files Upload" />
-    <option name="LAST_COMMIT_MESSAGE" value="DHN Thermal Power Effect - EES and Excel Files Upload" />
+    <MESSAGE value="CO2 DHN Thermal Power Effect - EES and Excel Files Upload" />
+    <option name="LAST_COMMIT_MESSAGE" value="CO2 DHN Thermal Power Effect - EES and Excel Files Upload" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -220,10 +263,54 @@
           <line>1</line>
           <option name="timeStamp" value="1" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/main_classes/geothermal_system/base_bhe.py</url>
+          <line>656</line>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/4.2 - Optimization CO2 - Overall.py</url>
+          <line>170</line>
+          <option name="timeStamp" value="7" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/4.2 - Optimization CO2 - Overall.py</url>
+          <line>182</line>
+          <option name="timeStamp" value="13" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/4.3 - Optimization CO2 V3.0.py</url>
+          <line>130</line>
+          <option name="timeStamp" value="14" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/4.3 - Optimization CO2 V3.0.py</url>
+          <line>97</line>
+          <option name="timeStamp" value="20" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/4.3 - Optimization CO2 V3.0.py</url>
+          <line>107</line>
+          <option name="timeStamp" value="21" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article/4.3 - Optimization CO2 V3.0.py</url>
+          <line>179</line>
+          <option name="timeStamp" value="22" />
+        </line-breakpoint>
       </breakpoints>
+      <default-breakpoints>
+        <breakpoint type="python-exception">
+          <properties notifyOnTerminate="true" exception="BaseException">
+            <option name="notifyOnTerminate" value="true" />
+          </properties>
+        </breakpoint>
+      </default-breakpoints>
     </breakpoint-manager>
   </component>
   <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/BHEModel3_0$4_3___Optimization_CO2_V3_0.coverage" NAME="4.3 - Optimization CO2 V3.0 Coverage Results" MODIFIED="1736417390115" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article" />
+    <SUITE FILE_PATH="coverage/BHEModel3_0$4_2___Optimization_CO2___Overall.coverage" NAME="4.2 - Optimization CO2 - Overall Coverage Results" MODIFIED="1736337773098" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/calculation/article calculations/2024-10-22 - SDEWES Article" />
     <SUITE FILE_PATH="coverage/BHEModel3_0$3___Optimization_Water_HP_ORC__Base_.coverage" NAME="3 - Optimization Water HP_ORC (Base) Coverage Results" MODIFIED="1733825015565" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/article calculations/2024-10-22 - SDEWES Article" />
   </component>
 </project>

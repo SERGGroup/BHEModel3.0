@@ -17,7 +17,7 @@ import os
 
 # %%------------   IMPORT RESULTS                         -----------------------------------------------------------> #
 CURRENT_DIR = os.path.join(ARTICLE_CALCULATION_DIR, "2024-10-22 - SDEWES Article")
-file_path = os.path.join(CURRENT_DIR, "0 - Results", "0 - Base Case", "CO2 - V2.0 (Base).xlsx")
+file_path = os.path.join(CURRENT_DIR, "0 - Results", "1 - DH Network Calculation", "CO2 Case V3.0.xlsx")
 
 workbook = load_workbook(filename=file_path)
 
@@ -44,7 +44,8 @@ workbook.close()
 # %%------------   EVALUATE LCOH FOR ALL                  -----------------------------------------------------------> #
 d_well = 0.15                       # [m]
 time = 10 * (365 * 24 * 60 * 60)    # [years] to [s]
-q_tot = 1000                        # [kW]
+q_tot = 22949                       # [kW]
+n_wells = 10
 
 # <---- INITIALIZING TOOLS ------------------------------------------------->
 input_point = ThermodynamicPoint(["Carbon Dioxide"], [1], unit_system="MASS BASE SI")
@@ -63,12 +64,10 @@ grad_list = np.unique(data_dict['grad'])
 h_rel_list = np.unique(data_dict['h_rel'])
 
 depth_mesh, grad_mesh = np.meshgrid(depth_list, grad_list)
-opt_lcoh = np.empty(depth_mesh.shape)
-opt_length = np.empty(depth_mesh.shape)
-opt_w_net = np.empty(depth_mesh.shape)
-opt_lcoh[:] = np.nan
-opt_length[:] = np.nan
-opt_w_net[:] = np.nan
+
+opt_results = np.empty(np.append(depth_mesh.shape, 6))
+opt_results[:] = np.nan
+
 
 pbar = tqdm(total=depth_mesh.shape[0]*depth_mesh.shape[1])
 
@@ -79,7 +78,7 @@ for i in range(depth_mesh.shape[0]):
         curr_depth = depth_mesh[i, j]
         curr_grad = grad_mesh[i, j]
 
-        curr_indices = np.where(np.logical_and.reduce((
+        base_curr_indices = np.where(np.logical_and.reduce((
 
             data_dict['depth'] == curr_depth,
             data_dict['grad'] == curr_grad,
@@ -87,101 +86,116 @@ for i in range(depth_mesh.shape[0]):
 
         )))
 
-        curr_dict = {header: data_dict[header][curr_indices] for header in headers}
-        curr_h_rel_list = np.unique(curr_dict['h_rel'])
+        base_curr_dict = {header: data_dict[header][base_curr_indices] for header in headers}
+        curr_T_sat_list = np.unique(base_curr_dict['T_sat'])
 
-        if len(curr_h_rel_list) > 0:
+        optimal_LCOH = np.inf
 
-            T_rocks = 10 + curr_depth * curr_grad
-            res_prop.grad = curr_grad
+        for T_sat in curr_T_sat_list:
 
-            # <---- REFINING RESULTS ----------------------------------------------->
-            n_points_fine = 99
-            sep_perc_list = np.logspace(-6, 0, n_points_fine+1)[:-1]
-            sep_perc = np.tile(sep_perc_list, (len(curr_h_rel_list), 1))
+            curr_indices = np.where(base_curr_dict['T_sat'] == T_sat)
+            curr_dict = {header: base_curr_dict[header][curr_indices] for header in headers}
+            curr_h_rel_list = np.unique(curr_dict['h_rel'])
 
-            t_down_fine = np.tile(curr_dict['T_1'], (n_points_fine, 1)).T
-            p_down_fine = np.tile(curr_dict['P_2'], (n_points_fine, 1)).T
-            c_tot_fine = np.tile(curr_dict['C_tot'], (n_points_fine, 1)).T
+            if len(curr_h_rel_list) > 0:
 
-            m_dot_grid = np.tile(curr_dict['m_rete'], (n_points_fine, 1)).T
-            w_turb1_fine = np.tile(curr_dict['W_turb1'], (n_points_fine, 1)).T
-            w_turb2_fine = np.tile(curr_dict['W_turb2'], (n_points_fine, 1)).T
-            w_comp_fine = np.tile(curr_dict['W_comp'], (n_points_fine, 1)).T
+                T_rocks = 10 + curr_depth * curr_grad
+                res_prop.grad = curr_grad
 
-            m_dot_fine = m_dot_grid / (1 - sep_perc)
-            w_turb2_fine = w_turb2_fine * sep_perc / (1 - sep_perc)
-            w_net_fine = w_comp_fine - w_turb1_fine - w_turb2_fine
+                # <---- REFINING RESULTS ----------------------------------------------->
+                n_points_fine = 99
+                sep_perc_list = np.logspace(-6, 0, n_points_fine+1)[:-1]
+                sep_perc = np.tile(sep_perc_list, (len(curr_h_rel_list), 1))
 
-            l_horiz_fine = np.empty(t_down_fine.shape)
-            c_well_fine = np.empty(t_down_fine.shape)
-            lcoh_fine = np.empty(t_down_fine.shape)
+                t_down_fine = np.tile(curr_dict['T_down'], (n_points_fine, 1)).T
+                p_down_fine = np.tile(curr_dict['P_down'], (n_points_fine, 1)).T
+                c_tot_fine = np.tile(curr_dict['C_tot'], (n_points_fine, 1)).T
 
-            l_horiz_fine[:] = np.nan
-            c_well_fine[:] = np.nan
-            lcoh_fine[:] = np.nan
+                m_dot_grid = np.tile(curr_dict['m_grid'], (n_points_fine, 1)).T
+                w_comp_fine = np.tile(curr_dict['W_comp'], (n_points_fine, 1)).T
 
-            optimal_LCOH = np.inf
-            optimal_h_rel = np.nan
-            optimal_sep_perc = np.nan
+                dh_turb = np.tile(curr_dict['dh_turb'], (n_points_fine, 1)).T
+                dh_well = np.tile(curr_dict['dh_well'], (n_points_fine, 1)).T
+                dh_grid = np.tile(curr_dict['dh_grid'], (n_points_fine, 1)).T
 
-            if not np.isnan(t_down_fine[0, 0]):
+                m_dot_fine = m_dot_grid * dh_grid / (dh_well - dh_turb * sep_perc)
+                w_turb_fine = dh_turb * sep_perc * m_dot_fine
+                w_net_fine = w_comp_fine - w_turb_fine
 
-                # <-- DEFINE INPUT POINTS ---------------------------->
-                T_in = t_down_fine[0, 0] + 273.15  # [°C] to [K]
-                P_in = p_down_fine[0, 0] * 1e3  # [kPa] to [Pa]
-                T_rocks_K = T_rocks + 273.15  # [°C] to [K]
+                l_horiz_fine = np.empty(t_down_fine.shape)
+                c_well_fine = np.empty(t_down_fine.shape)
+                lcoh_fine = np.empty(t_down_fine.shape)
 
-                input_point.set_variable("P", P_in)
-                input_point.set_variable("T", T_in)
-                output_point.set_variable("P", P_in)
-                output_point.set_variable("T", T_rocks_K)
+                l_horiz_fine[:] = np.nan
+                c_well_fine[:] = np.nan
+                lcoh_fine[:] = np.nan
 
-                # <-- EVALUATE L_HORIZ ------------------------------->
-                integrator.limiting_points = (input_point, output_point)
-                UA = integrator.evaluate_integral(curr_h_rel_list)
-                UdAs = np.pi * d_well / res_prop.evaluate_rel_resistance(times=[time], d=d_well)[0]
+                if not np.isnan(t_down_fine[0, 0]):
 
-                for n, h_rel in enumerate(curr_h_rel_list):
+                    # <-- DEFINE INPUT POINTS ---------------------------->
+                    T_in = t_down_fine[0, 0] + 273.15  # [°C] to [K]
+                    P_in = p_down_fine[0, 0] * 1e3  # [kPa] to [Pa]
+                    T_rocks_K = T_rocks + 273.15  # [°C] to [K]
 
-                    for m in range(len(sep_perc_list)):
+                    input_point.set_variable("P", P_in)
+                    input_point.set_variable("T", T_in)
+                    output_point.set_variable("P", P_in)
+                    output_point.set_variable("T", T_rocks_K)
 
-                        l_horiz = UA[n] / UdAs * integrator.dh_max * m_dot_fine[n, m]
+                    # <-- EVALUATE L_HORIZ ------------------------------->
+                    integrator.limiting_points = (input_point, output_point)
+                    UA = integrator.evaluate_integral(curr_h_rel_list)
+                    UdAs = np.pi * d_well / res_prop.evaluate_rel_resistance(times=[time], d=d_well)[0]
 
-                        if l_horiz > 0:
+                    for n, h_rel in enumerate(curr_h_rel_list):
 
-                            l_horiz_fine[n, m] = l_horiz
+                        for m in range(len(sep_perc_list)):
 
-                            # <-- EVALUATE LCOH ---------------------------------->
-                            lcoh_fine[n, m], c_well_fine[n, m] = economic_evaluator.LCOx(
+                            l_horiz = UA[n] / UdAs * integrator.dh_max * (m_dot_fine[n, m]  / n_wells)
 
-                                useful_effects=q_tot,
-                                l_overall=l_horiz + curr_depth,
-                                d_well=d_well,
-                                other_costs=c_tot_fine[n, m],
-                                w_net_el=w_net_fine[n, m]
+                            if l_horiz > 0:
 
-                            )
+                                l_horiz_fine[n, m] = l_horiz
 
-                            if lcoh_fine[n, m] < optimal_LCOH:
+                                # <-- EVALUATE LCOH ---------------------------------->
+                                lcoh_fine[n, m], c_well_fine[n, m] = economic_evaluator.LCOx(
 
-                                optimal_LCOH = lcoh_fine[n, m]
-                                optimal_h_rel = curr_h_rel_list[n]
-                                optimal_sep_perc = sep_perc[n, m]
+                                    useful_effects=q_tot  / n_wells,
+                                    l_overall=l_horiz + curr_depth,
+                                    d_well=d_well,
+                                    other_costs=c_tot_fine[n, m]  / n_wells,
+                                    w_net_el=w_net_fine[n, m] / n_wells
 
-                                opt_lcoh[i, j] = optimal_LCOH
-                                opt_length[i, j] = l_horiz
-                                opt_w_net[i, j] = w_net_fine[n, n]
+                                )
+
+                                if lcoh_fine[n, m] < optimal_LCOH:
+
+                                    optimal_LCOH = lcoh_fine[n, m]
+
+                                    opt_results[i, j, 0] = optimal_LCOH
+                                    opt_results[i, j, 1] = l_horiz
+                                    opt_results[i, j, 2] = w_net_fine[n, m]
+                                    opt_results[i, j, 3] = T_sat
+                                    opt_results[i, j, 4] = h_rel_list[n]
+                                    opt_results[i, j, 5] = sep_perc_list[m]
 
         pbar.update(1)
+
+opt_lcoh = opt_results[:, :, 0]
+opt_length = opt_results[:, :, 1]
+opt_w_net = opt_results[:, :, 2]
+opt_t_sat = opt_results[:, :, 3]
+opt_h_rel = opt_results[:, :, 4]
+opt_sep_perc = opt_results[:, :, 5]
+
 
 pbar.close()
 
 
 # %%------------   PLOT OPTIMAL LCOH                      -----------------------------------------------------------> #
 n_fine = 150
-method = 'linear'
-depth_min = 1600
+method = 'cubic'
+depth_min = 1000
 lcoh_pos_mask = np.where(
 
     np.logical_and.reduce((
@@ -215,7 +229,7 @@ lcoh_neg_mask = np.where(
 
     ))
 )
-
+has_negative = len(lcoh_neg_mask[0])>0
 # For length
 length_mask = np.where(
 
@@ -234,8 +248,9 @@ depth_fine, grad_fine = np.meshgrid(depth_fine, grad_fine)
 points = np.vstack((depth_mesh[lcoh_pos_mask], grad_mesh[lcoh_pos_mask])).T
 LCOH_fine = griddata(points, np.log(opt_lcoh[lcoh_pos_mask]), (depth_fine, grad_fine), method=method)
 
-points = np.vstack((depth_mesh[lcoh_neg_mask], grad_mesh[lcoh_neg_mask])).T
-LCOH_neg = griddata(points, np.log(-opt_lcoh[lcoh_neg_mask]), (depth_fine, grad_fine), method=method)
+if has_negative:
+    points = np.vstack((depth_mesh[lcoh_neg_mask], grad_mesh[lcoh_neg_mask])).T
+    LCOH_neg = griddata(points, np.log(-opt_lcoh[lcoh_neg_mask]), (depth_fine, grad_fine), method=method)
 
 points = np.vstack((depth_mesh[length_mask], grad_mesh[length_mask])).T
 l_horiz_fine = griddata(points, np.log(opt_length[length_mask]), (depth_fine, grad_fine), method=method)
@@ -298,7 +313,7 @@ axs[0].set_title("Optimal LCOH [c€/kWh]")
 
 contour = axs[0].contourf(grad_fine * 1e3, depth_fine/1e3, LCOH_fine, levels=25, cmap="viridis_r")
 
-tick_values = np.array([1, 2, 5, 10, 20])
+tick_values = np.array([1, 2, 5, 15, 50])
 cbar = fig.colorbar(contour, ax=axs[0], orientation='vertical', fraction=0.046, pad=0.01)
 cbar.set_ticks(np.log(tick_values / 100))
 cbar.set_ticklabels(['{}'.format(tick) for tick in tick_values])
@@ -320,31 +335,32 @@ plt.clabel(
 
 )
 
-contour = axs[0].contourf(grad_fine * 1e3, depth_fine/1e3, LCOH_neg, levels=25, cmap="plasma")
+if has_negative:
+    contour = axs[0].contourf(grad_fine * 1e3, depth_fine/1e3, LCOH_neg, levels=25, cmap="plasma")
 
-tick_values = np.array([1, 2, 5, 15, 50])
+    tick_values = np.array([1, 2, 5, 15, 50])
 
-cbar = fig.colorbar(contour, ax=axs[0], orientation='vertical', fraction=0.046, pad=0.1)
-cbar.set_ticks(np.log(tick_values / 100))
-cbar.set_ticklabels(['-{}'.format(tick) for tick in tick_values])
-cbar.ax.yaxis.set_ticks_position('left')
-cbar.ax.set_title('-')
+    cbar = fig.colorbar(contour, ax=axs[0], orientation='vertical', fraction=0.046, pad=0.1)
+    cbar.set_ticks(np.log(tick_values / 100))
+    cbar.set_ticklabels(['-{}'.format(tick) for tick in tick_values])
+    cbar.ax.yaxis.set_ticks_position('left')
+    cbar.ax.set_title('-')
 
-inline_values = np.array([5, 50])
-contour_lines = axs[0].contour(
+    inline_values = np.array([5, 50])
+    contour_lines = axs[0].contour(
 
-    grad_fine * 1e3, depth_fine/1e3, LCOH_neg, linestyles="solid",
-    levels=np.log(inline_values / 100), colors='white',
-    linewidths=1
+        grad_fine * 1e3, depth_fine/1e3, LCOH_neg, linestyles="solid",
+        levels=np.log(inline_values / 100), colors='white',
+        linewidths=1
 
-)
-plt.clabel(
+    )
+    plt.clabel(
 
-    contour_lines, inline=True,
-    fontsize=10, fmt=lambda x: f"-{np.exp(x) * 100:.1f} c€/kWh",
-    use_clabeltext=True
+        contour_lines, inline=True,
+        fontsize=10, fmt=lambda x: f"-{np.exp(x) * 100:.1f} c€/kWh",
+        use_clabeltext=True
 
-)
+    )
 
 # <-- SECOND AX ---------------------------------->
 axs[1].set_title("Optimal Horizontal Length [km]")

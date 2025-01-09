@@ -33,7 +33,7 @@ table = np.stack((depth_list, grad_list, dt_HE)).T
 
 # %%------------   IMPORT RESULTS                         -----------------------------------------------------------> #
 CURRENT_DIR = os.path.join(ARTICLE_CALCULATION_DIR, "2024-10-22 - SDEWES Article")
-file_path = os.path.join(CURRENT_DIR, "0 - Results", "Water (Base).xlsx")
+file_path = os.path.join(CURRENT_DIR, "0 - Results", "0 - Base Case", "Water (Base).xlsx")
 
 workbook = load_workbook(filename=file_path)
 
@@ -62,6 +62,7 @@ d_well = 0.15                       # [m]
 time = 10 * (365 * 24 * 60 * 60)    # [years] to [s]
 q_tot = 1000                        # [kW]
 m_dot = 5.971                       # [kg/s]
+n_wells = 1
 
 depth_list = np.unique(data_dict['depth'])
 grad_list = np.unique(data_dict['grad'])
@@ -138,28 +139,28 @@ for curr_depth in depth_list:
             integrator.limiting_points = (input_point, output_point)
             UA = integrator.evaluate_integral(final_results['h_rel'][i])
             UdAs = np.pi * d_well / res_prop.evaluate_rel_resistance(times=[time], d=d_well)[0]
-            l_horiz = UA / UdAs * integrator.dh_max * m_dot
+            l_horiz = UA / UdAs * integrator.dh_max * m_dot / n_wells
             final_results["l_horiz"][i] = l_horiz
 
             # <-- EVALUATE LCOH ---------------------------------->
             final_results["LCOH"][i], final_results["c_well"][i] = economic_evaluator.LCOx(
 
-                useful_effects=q_tot,
+                useful_effects=q_tot / n_wells,
                 l_overall=l_horiz + curr_depth,
                 d_well=d_well,
-                other_costs=final_results['c_tot'][i]
+                other_costs=final_results['c_tot'][i] / n_wells
 
             )
 
             if final_results["LCOH"][i] < optimal_LCOH:
 
-                optimal_LCOH = final_results["LCOH"][i]
+                # optimal_LCOH = final_results["LCOH"][i]
 
                 for key in optimal_key_to_save:
 
                     optimal_results[key][n] = final_results[key][i]
 
-                optimal_LCOH = final_results["LCOH"][i]
+                # optimal_LCOH = final_results["LCOH"][i]
 
         n += 1
 
